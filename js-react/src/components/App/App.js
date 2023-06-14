@@ -1,19 +1,20 @@
-import logo from './logo.svg';
+import logo from '../../logo.svg';
 import './App.css';
-import Clock from '../Clock/Clock.js";
+import Clock from '../Clock/Clock.js';
+import React from 'react';
 
 function App() {
 
-  const [time, setTime] = useState(0);
-  const [clockIsRunning, setClockIsRunning] = useState(false);
+  const [time, setTime] = React.useState(0);
+  const [running, setRunning] = React.useState(false);
 
   return (
     <div className="App">
       <Clock 
         time={time}
         setTime={setTime}
-        clockIsRunning={clockIsRunning}
-        setClockIsRunning={setClockIsRunning}
+        running={running}
+        setRunning={setRunning}
       />
     </div>
   );
