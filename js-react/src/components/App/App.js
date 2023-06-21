@@ -9,6 +9,7 @@ function App() {
   const [time, setTime] = React.useState(0);
   const [running, setRunning] = React.useState(false);
   const [username, setUsername] = React.useState('');
+  const [nameErr, setNameErr] = React.useState('');
 
   const randomList = [ 'buddy', 'pal', 'bro' ];
 
@@ -18,6 +19,8 @@ function App() {
         existingUsers={randomList}
         username={username}
         setUsername={setUsername}
+        nameErr={nameErr}
+        setNameErr={setNameErr}
       />
       <Clock 
         time={time}

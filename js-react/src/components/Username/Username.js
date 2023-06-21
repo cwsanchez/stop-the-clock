@@ -2,46 +2,37 @@ import React from 'react';
 
 function Username(props) {
   
-  //console.log(props);
   const usrInputRef = React.useRef('');
   const usrInputErr = React.useRef('');
-  const submitUserInput = React.useRef(false);
-  const submitClearInput = React.useRef(false);
-
-  //console.log(submitUserInput.current);
+  let submitUserInput = false;
+  let submitClearInput = false;
 
   React.useEffect( () => {
-    if (submitUserInput.current === true) {
-      let newUsername = usrInputRef.current;
-
-      //console.log(newUsername)
-
-      if ( !(isStringValid(newUsername)) ) {
-        //console.log(isStringValid(newUsername));
-        usrInputErr.current = "Only A-Z, a-z, -, and _ characters are permitted!";
+    if (submitUserInput === true) {
+      if ( !(isStringValid(usrInputRef.current)) ) {
+        props.setNameErr("Only A-Z, a-z, -, and _ characters are permitted!");
        }
-      else if ( (props.existingUsers.includes(newUsername)) ) {
-        //console.log(props.existingUsers.includes(newUsername));
-        usrInputErr.current = "Username already exists!"
+      else if ( (props.existingUsers.includes(usrInputRef.current)) ) {
+        props.setNameErr("Username already exists!");
       }
       else {
-        props.setUsername(newUsername);
+        props.setUsername(usrInputRef.current);
       }
     }
   })
 
   React.useEffect( () => {
-    if (submitClearInput.current === true) {
+    if (submitClearInput === true) {
       props.setUsername('');
     }
   })
 
   const setSubmitClearInput = () => {
-    submitClearInput.current = true;
+    submitClearInput = true;
   }
 
   const setSubmitUserTrue = () => {
-    submitUserInput.current = true;
+    submitUserInput = true;
   }
 
   const isStringValid = (str) => {
@@ -54,7 +45,7 @@ function Username(props) {
     if ( !(props.username) ) {
       return (
         <div className="username-field" >
-          <p>Enter a username (A-Z, a-z, -, _)</p>
+          <p>Enter a username ( A-Z, a-z, -, _ )</p>
           <input 
             type="text" 
             ref={usrInputRef}
