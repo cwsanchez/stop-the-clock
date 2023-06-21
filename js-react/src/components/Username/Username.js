@@ -1,4 +1,22 @@
+import React from 'react';
+
 function Username(props) {
+  
+  //console.log(props);
+  const usrInputRef = React.useRef('');
+  const submitUserInput = React.useRef(false);
+
+  console.log(submitUserInput.current);
+
+  React.useEffect( () => {
+    if (submitUserInput.current === true) {
+      submitUsername();
+    }
+  })
+
+  const setSubmitUserTrue = () => {
+    submitUserInput.current = true;
+  }
 
   const isStringValid = (str) => {
     const pattern = /^[a-zA-Z_\-]+$/;
@@ -6,24 +24,39 @@ function Username(props) {
     return pattern.test(str)
   }
 
-  const submitUsername = (usernameInput) => {
-   if ( !(isStringValid(usernameInput)) ) {
-    return "Only A-Z, a-z, -, and _ characters are permitted!"
-   }
-   else if ( !(props.existingUsers.includes(usernameInput)) ) {
-    return "Username already exists!"
-   }
-   else {
-    props.setUsername(usernameInput);
-   }
+  const submitUsername = () => {
+    let newUsername = usrInputRef.current.value;
 
-  let usernameField = () => {
+    //console.log(newUsername)
+
+    if ( !(isStringValid(newUsername)) ) {
+      //console.log(isStringValid(newUsername));
+      return "Only A-Z, a-z, -, and _ characters are permitted!"
+     }
+    else if ( (props.existingUsers.includes(newUsername)) ) {
+      //console.log(props.existingUsers.includes(newUsername));
+      return "Username already exists!"
+    }
+    else {
+      props.setUsername(newUsername);
+    }
+  }
+
+  const usernameField = () => {
     if ( !(props.username) ) {
       return (
-        <input 
-          type="text" 
-          onChange={ (newUser) => {submitUsername(newUser)} } 
-        />
+        <div className="username-field" >
+          <input 
+            type="text" 
+            ref={usrInputRef}
+          />
+          <button 
+            type="button" 
+            onClick={ setSubmitUserTrue() }
+          >
+            Submit
+          </button>
+        </div>
       )
     }
     else {
@@ -40,8 +73,6 @@ function Username(props) {
        </button>
     </div>
   );
-}
-
 }
 
 export default Username;
