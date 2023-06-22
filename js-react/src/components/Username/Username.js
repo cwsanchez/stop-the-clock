@@ -1,38 +1,24 @@
 import React from 'react';
 
 function Username(props) {
-  
+
+  const [username, setUsername] = React.useState('');
+  const [nameErr, setNameErr] = React.useState('');
   const usrInputRef = React.useRef('');
-  const usrInputErr = React.useRef('');
-  let submitUserInput = false;
-  let submitClearInput = false;
 
-  React.useEffect( () => {
-    if (submitUserInput === true) {
-      if ( !(isStringValid(usrInputRef.current)) ) {
-        props.setNameErr("Only A-Z, a-z, -, and _ characters are permitted!");
-       }
-      else if ( (props.existingUsers.includes(usrInputRef.current)) ) {
-        props.setNameErr("Username already exists!");
-      }
-      else {
-        props.setUsername(usrInputRef.current);
-      }
+  React.useEffect( () => { if (username) { props.setUsername(username) } } )
+
+  const handleUsernameSubmit = () => {
+    if ( !(isStringValid(usrInputRef.current.value)) ) {
+      setNameErr("Only A-Z, a-z, -, and _ characters are permitted!");
+     }
+    else if ( (props.existingUsers.includes(usrInputRef.current.value)) ) {
+      setNameErr("Username already exists!");
     }
-  })
-
-  React.useEffect( () => {
-    if (submitClearInput === true) {
-      props.setUsername('');
+    else {
+      setNameErr(null);
+      setUsername(usrInputRef.current.value);
     }
-  })
-
-  const setSubmitClearInput = () => {
-    submitClearInput = true;
-  }
-
-  const setSubmitUserTrue = () => {
-    submitUserInput = true;
   }
 
   const isStringValid = (str) => {
@@ -42,7 +28,7 @@ function Username(props) {
   }
 
   const usernameField = () => {
-    if ( !(props.username) ) {
+    if ( !(username) ) {
       return (
         <div className="username-field" >
           <p>Enter a username ( A-Z, a-z, -, _ )</p>
@@ -52,7 +38,7 @@ function Username(props) {
           />
           <button 
             type="button" 
-            onClick={ setSubmitUserTrue }
+            onClick={ handleUsernameSubmit }
           >
             Submit
           </button>
@@ -63,16 +49,26 @@ function Username(props) {
       return (
         <div className="username-display">
           <p>Username:</p>
-          <p>{props.username}</p>
+          <p>{username}</p>
         </div>
       )
+    }
+  }
+
+  const displayUsernameErr = () => {
+    if ( nameErr ) {
+      return <p id="name-err" >{nameErr}</p>
+    }
+    else {
+      return null
     }
   }
 
   return(
     <div className="username">
       {usernameField()}
-       <button type="button" onClick={ setSubmitClearInput }>
+      {displayUsernameErr()}
+       <button type="button" onClick={ () => { setUsername('') } }>
         Reset Username
        </button>
     </div>
