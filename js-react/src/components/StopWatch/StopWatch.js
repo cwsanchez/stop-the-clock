@@ -14,26 +14,26 @@ function StopWatch(props) {
     return () => clearInterval(interval);
   });
 
+  const seconds = ((props.time / 10) % 100);
+
   const stopStartButton = () => {
     if ( props.running === true ) {
       return (
         <div id="buttons" >
           <button onClick={() => props.setRunning(false)}>Stop</button>
-          <button onClick={() => props.setTime(0)}>Reset</button>
         </div>
        )
     }
-    else if ( props.time > 0 ) {
+    else if ( seconds === 0 ) {
       return (
         <div id="buttons" >
           <button onClick={() => props.setRunning(true)}>Start</button>
-          <button onClick={() => props.setTime(0)}>Reset</button>
          </div>
        )
      }
      else {
       return (
-        <button onClick={() => props.setRunning(true)}>Start</button>
+        <button onClick={() => props.setTime(0)}>Reset</button>
       )
      }
   }
