@@ -1,6 +1,6 @@
 import logo from '../../logo.svg';
 import './App.css';
-import Clock from '../Clock/Clock.js';
+import StopWatch from '../StopWatch/StopWatch.js';
 import Username from '../Username/Username.js';
 import React from 'react';
 
@@ -19,7 +19,7 @@ function App() {
         username={username}
         setUsername={setUsername}
       />
-      <Clock 
+      <StopWatch 
         time={time}
         setTime={setTime}
         running={running}
