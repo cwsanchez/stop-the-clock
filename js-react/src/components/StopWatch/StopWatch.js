@@ -14,7 +14,11 @@ function StopWatch(props) {
     return () => clearInterval(interval);
   });
 
-  const seconds = ((props.time / 10) % 100);
+  const milliseconds = ((props.time / 10) % 100);
+  const resetTimeScore = () => {
+    props.setTime(0);
+    props.setScore(0);
+  }
 
   const stopStartButton = () => {
     if ( props.running === true ) {
@@ -24,7 +28,7 @@ function StopWatch(props) {
         </div>
        )
     }
-    else if ( seconds === 0 ) {
+    else if ( milliseconds === 0 ) {
       return (
         <div id="buttons" >
           <button onClick={() => props.setRunning(true)}>Start</button>
@@ -33,7 +37,9 @@ function StopWatch(props) {
      }
      else {
       return (
-        <button onClick={() => props.setTime(0)}>Reset</button>
+        <button
+          onClick={resetTimeScore}
+          >Reset</button>
       )
      }
   }
