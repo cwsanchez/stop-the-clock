@@ -15,6 +15,7 @@ function StopWatch(props) {
   });
 
   const milliseconds = ((props.time / 10) % 100);
+
   const resetTimeScore = () => {
     props.setTime(0);
     props.setScore(0);
@@ -35,11 +36,23 @@ function StopWatch(props) {
          </div>
        )
      }
-     else {
+    else if ( 
+      props.score > 0 &&
+      props.score > props.leaderboard[props.username]
+ 
+    ) { 
       return (
-        <button
-          onClick={resetTimeScore}
-          >Reset</button>
+        <div id="buttons" >
+          <button onClick={resetTimeScore}>Reset</button>
+          <button onclick={() => props.addScore()}>Submit Score</button>
+        </div>
+      )
+    
+    }
+
+    else {
+      return (
+        <button onClick={resetTimeScore}>Reset</button>
       )
      }
   }

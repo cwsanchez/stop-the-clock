@@ -13,6 +13,19 @@ function App() {
   const [username, setUsername] = React.useState('');
   const [score, setScore] = React.useState(0);
 
+  const [users, setUsers] = React.useState(
+    ['buddy', 'pal', 'bro' ]
+  );
+
+  const [topScores, setTopScores] = React.useState(
+    {
+      'buddy': 99,
+      'pal': 1,
+      'bro': 2
+    }
+      
+  );
+
   React.useEffect( () => {
     if (
       (running === false) &&
@@ -23,20 +36,33 @@ function App() {
     }
   }, [ running, time ] )
 
-  const randomList = [ 'buddy', 'pal', 'bro' ];
+  const addUser = () => {
+    let newUsers = users;
+    newUsers.push(username);
+    setUsers(newUsers);
+  }
   
-  const randomLeaderboard = {
-    'buddy': 99,
-    'pal': 1,
-    'bro': 2
+  const removeUser = () => {
+    let newUsers = users;
+    userIndex = newUsers.indexOf(username);
+    newUsers.splice(userIndex, 1);
+    setUsers(newUsers);
+  }
+
+  const addScore = () => {
+    let newTopScores = topScores;
+    newTopScores[username] = score;
+    setTopScores(newTopScores);  
   }
 
   return (
     <div className="App">
       <Username
-        existingUsers={randomList}
+        existingUsers={users}
         username={username}
         setUsername={setUsername}
+        addUser={addUser}
+        removeUser={removeUser}
       />
       <StopWatch
         time={time}
@@ -44,12 +70,16 @@ function App() {
         running={running}
         setRunning={setRunning}
         setScore={setScore}
+        leaderboard={topScores}
+        score={score}
+        username={username}
+        addScore={addScore}
       />
       <Score
         score={score}
       />
       <Leaderboard
-        leaderboard={randomLeaderboard}
+        leaderboard={topScores}
       />
     </div>
   );
