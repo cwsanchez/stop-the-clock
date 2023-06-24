@@ -36,20 +36,21 @@ function StopWatch(props) {
          </div>
        )
      }
-    else if ( 
-      props.score > 0 &&
-      props.score > props.leaderboard[props.username]
- 
-    ) { 
+    else if ( (props.score > 0) && (props.username) ) { 
       return (
         <div id="buttons" >
           <button onClick={resetTimeScore}>Reset</button>
-          <button onclick={() => props.addScore()}>Submit Score</button>
+          <button onClick={() => props.addScore()}>Submit Score</button>
         </div>
       )
-    
     }
-
+    else if ( (props.score > 0) && (!(props.username)) ) {
+      return (
+        <div id="buttons" >
+          <p>Enter a username to submit score!</p> 
+        </div>
+      )
+    }
     else {
       return (
         <button onClick={resetTimeScore}>Reset</button>
