@@ -1,7 +1,7 @@
 function Score(props) {
 
   return (
-    <div id="score" >
+    <div className="score" >
       <p>Your current score:</p>
       {props.score}
     </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import StopWatch from '../StopWatch/StopWatch.js';
 import Username from '../Username/Username.js';
 import Score from '../Score/Score.js';
+import Leaderboard from '../Leaderboard/Leaderboard.js';
 
 function App() {
 
@@ -23,6 +24,12 @@ function App() {
   }, [ running, time ] )
 
   const randomList = [ 'buddy', 'pal', 'bro' ];
+  
+  const randomLeaderboard = {
+    'buddy': 99,
+    'pal': 1,
+    'bro': 2
+  }
 
   return (
     <div className="App">
@@ -40,6 +47,9 @@ function App() {
       />
       <Score
         score={score}
+      />
+      <Leaderboard
+        leaderboard={randomLeaderboard}
       />
     </div>
   );
