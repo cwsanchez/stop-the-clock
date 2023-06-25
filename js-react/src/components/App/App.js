@@ -12,6 +12,8 @@ function App() {
   const [running, setRunning] = React.useState(false);
   const [username, setUsername] = React.useState('');
   const [score, setScore] = React.useState(0);
+  const [submitUser, setSubmitUser] = React.useState();
+  const [submitScore, setSubmitScore] = React.useState();
 
   const [users, setUsers] = React.useState(
     ['buddy', 'pal', 'bro' ]
@@ -23,7 +25,6 @@ function App() {
       'pal': 1,
       'bro': 2
     }
-      
   );
 
   React.useEffect( () => {
@@ -35,6 +36,14 @@ function App() {
       setScore( score + 1 )
     }
   }, [ running, time ] )
+
+  React.useEffect( () => {
+    if (username) {addUser()}
+  } )
+  
+  React.useEffect( () => {
+    if (submitScore) {addScore()}    
+  } )
 
   const addUser = () => {
     let newUsers = users;
@@ -73,7 +82,7 @@ function App() {
         leaderboard={topScores}
         score={score}
         username={username}
-        addScore={addScore}
+        setSubmitScore={setSubmitScore}
       />
       <Score
         score={score}

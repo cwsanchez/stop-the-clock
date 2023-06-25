@@ -1,6 +1,8 @@
 import React from 'react';
 
 function StopWatch(props) {
+  
+  const [submitScore, setSubmitScore] = React.useState(false);
 
   React.useEffect(() => {
     let interval;
@@ -13,6 +15,13 @@ function StopWatch(props) {
     }
     return () => clearInterval(interval);
   });
+
+  React.useEffect(() => {
+    if (submitScore) { 
+      props.setSubmitScore(true);
+      setSubmitScore(false);
+    }
+  }, [submitScore]);
 
   const milliseconds = ((props.time / 10) % 100);
 
@@ -40,7 +49,7 @@ function StopWatch(props) {
       return (
         <div id="buttons" >
           <button onClick={resetTimeScore}>Reset</button>
-          <button onClick={() => props.addScore()}>Submit Score</button>
+          <button onClick={() => setSubmitScore(true)}>Submit Score</button>
         </div>
       )
     }
