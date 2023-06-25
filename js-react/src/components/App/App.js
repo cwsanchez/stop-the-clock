@@ -42,7 +42,10 @@ function App() {
   } )
   
   React.useEffect( () => {
-    if (submitScore) {addScore()}    
+    if (submitScore) {
+      addScore();
+      setSubmitScore(false);
+    }
   } )
 
   const addUser = () => {
@@ -89,6 +92,7 @@ function App() {
       />
       <Leaderboard
         leaderboard={topScores}
+        submitScore={submitScore}
       />
     </div>
   );
