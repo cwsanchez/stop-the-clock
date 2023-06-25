@@ -4,7 +4,10 @@ function Leaderboard(props) {
   const [submitScore, setSubmitScore] = React.useState(false);
   
   React.useEffect( () => {
-    if (props.submitScore) { setSubmitScore(true) }
+    if (props.submitScore) { 
+      setSubmitScore(true);
+      setSubmitScore(false);
+    }
   })    
  
   let listOfLeaders = Object.keys(props.leaderboard).map(
