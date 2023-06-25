@@ -48,6 +48,7 @@ function StopWatch(props) {
       return (
         <div id="buttons" >
           <p>Enter a username to submit score!</p> 
+          <button onClick={resetTimeScore}>Reset</button>
         </div>
       )
     }
