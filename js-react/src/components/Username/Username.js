@@ -6,7 +6,14 @@ function Username(props) {
   const [nameErr, setNameErr] = React.useState('');
   const usrInputRef = React.useRef('');
 
-  React.useEffect( () => { if (username) { props.setUsername(username) } } )
+  React.useEffect( () => { 
+    if (username) { 
+      props.setUsername(username) 
+    } 
+    else if ( !(username) ) {
+      props.setUsername('')
+    }
+  } )
 
   const handleUsernameSubmit = () => {
     if ( !(isStringValid(usrInputRef.current.value)) ) {
