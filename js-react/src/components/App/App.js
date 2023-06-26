@@ -1,5 +1,6 @@
 import logo from '../../logo.svg';
 import './App.css';
+import { getScores, submitScore } from '../../Utilities/backendRequests.js';
 import React from 'react';
 import StopWatch from '../StopWatch/StopWatch.js';
 import Username from '../Username/Username.js';
