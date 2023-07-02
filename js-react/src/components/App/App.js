@@ -15,18 +15,15 @@ function App() {
   const [score, setScore] = React.useState(0);
   const [submitUser, setSubmitUser] = React.useState();
   const [submitScore, setSubmitScore] = React.useState();
+  const [refreshLeaderboard, setRefreshLeaderboard] = React.useState();
 
+/*
   const [users, setUsers] = React.useState(
     ['buddy', 'pal', 'bro' ]
   );
+*/
 
-  const [topScores, setTopScores] = React.useState(
-    {
-      'buddy': 99,
-      'pal': 1,
-      'bro': 2
-    }
-  );
+  const [topScores, setTopScores] = React.useState( {} );
 
   React.useEffect( () => {
     if (
@@ -38,9 +35,11 @@ function App() {
     }
   }, [ running, time ] )
 
+/*
   React.useEffect( () => {
     if (username) {addUser()}
   } )
+*/
   
   React.useEffect( () => {
     if (submitScore) {
@@ -49,24 +48,49 @@ function App() {
     }
   } )
 
+  React.useEffect( () => {
+    if (refreshLeaderboard) {
+      getScores.then(
+        (listOfScores) => {
+          let scores = Object.fromEntries(listOfScores);
+          setTopScores(scoresObject);
+          setRefreshLeaderboard(false);
+        }    
+      )    
+    }  
+  } )
+
+
+  const addScore = () => {
+    submitScore(username, score).then( return );
+  }
+
+  const checkUsernameAvailability (newUsername) => {
+    getScores.then( 
+      (listOfScores) => {
+        let scores = Object.fromEntries(listOfScores);
+        let usernames = Object.keys(scores);
+        return usernames.includes(newUsername)
+      }
+    )
+  }
+
+/*
   const addUser = () => {
     let newUsers = users;
     newUsers.push(username);
     setUsers(newUsers);
-  }
-  
+  }\
+*/
+ 
+/* 
   const removeUser = () => {
     let newUsers = users;
     userIndex = newUsers.indexOf(username);
     newUsers.splice(userIndex, 1);
     setUsers(newUsers);
   }
-
-  const addScore = () => {
-    let newTopScores = topScores;
-    newTopScores[username] = score;
-    setTopScores(newTopScores);  
-  }
+*/
 
   return (
     <div className="App">
@@ -76,6 +100,7 @@ function App() {
         setUsername={setUsername}
         addUser={addUser}
         removeUser={removeUser}
+        checkUsernameAvailability={checkUsernameAvailability}
       />
       <StopWatch
         time={time}
@@ -94,6 +119,8 @@ function App() {
       <Leaderboard
         leaderboard={topScores}
         submitScore={submitScore}
+        refreshLeaderboard={refreshLeaderboard}
+        setRefreshScore={setRefreshLeaderboard}
       />
     </div>
   );

@@ -6,7 +6,7 @@ const getScores = async () => {
     }
     const data = await response.json();
     const users = data.users;
-    // Process the users data
+    return users;
   } catch (error) {
     console.error('Error retrieving users:', error);
   }

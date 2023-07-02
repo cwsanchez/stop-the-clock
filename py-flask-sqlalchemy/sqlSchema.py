@@ -1,4 +1,5 @@
-from app import db
+from main import db
+from datetime import datetime
 
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)

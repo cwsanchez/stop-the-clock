@@ -33,5 +33,10 @@ class ScoreResource(Resource):
 
 api.add_resource(UserResource, '/users')
 
-if not db.engine.dialect.has_table(db.engine, Highscores.__tablename__):
-    db.create_all()
+def main():
+  if not db.engine.dialect.has_table(db.engine, Highscores.__tablename__):
+      db.create_all()
+  app.run( host='0.0.0.0', debug=True )
+
+if __name__ == '__main__':
+  main()

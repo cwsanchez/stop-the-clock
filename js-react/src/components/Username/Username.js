@@ -19,7 +19,9 @@ function Username(props) {
     if ( !(isStringValid(usrInputRef.current.value)) ) {
       setNameErr("Only A-Z, a-z, -, and _ characters are permitted!");
      }
-    else if ( (props.existingUsers.includes(usrInputRef.current.value)) ) {
+    else if ( 
+      props.checkUsernameAvailability(usrInputRef.current.value) 
+    ) {
       setNameErr("Username already exists!");
     }
     else {
@@ -29,10 +31,6 @@ function Username(props) {
     }
   }
   
-  const handleUsernameReset = () => {
-    
-  }
-
   const isStringValid = (str) => {
     const pattern = /^[a-zA-Z_\-]+$/;
 
