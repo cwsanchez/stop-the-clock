@@ -27,7 +27,6 @@ function Username(props) {
     else {
       setNameErr(null);
       setUsername(usrInputRef.current.value);
-      props.addUser()
     }
   }
   

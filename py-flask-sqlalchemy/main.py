@@ -1,21 +1,21 @@
 from flask import Flask, request
-from flask_restful import Resource, Api
-from flask_sqlalchemy import SQLAlchemy
-from models import Score 
+from flask_restful import Api, Resource
+from sqlalchemy.orm import sessionmaker
+from sqlSchema import User, engine
 
 app = Flask(__name__)
 api = Api(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stc-data.db'
-db = SQLAlchemy(app)
 
-class ScoreResource(Resource):
+# Configure Session
+Session = sessionmaker(bind=engine)
+
+class UserResource(Resource):
     def get(self):
-        users = Score.query.all()
-        return {
-          'users' : [
-            {'username': user.username, 'score': user.score} for user in users
-          ]
-        }
+        session = Session()
+        users = session.query(User).all()
+        data = {'users': [{'username': user.username, 'score': user.score} for user in users]}
+        session.close()
+        return data
 
     def post(self):
         data = request.json
@@ -25,18 +25,15 @@ class ScoreResource(Resource):
         if not username or not score:
             return {'message': 'Invalid data'}, 400
 
+        session = Session()
         user = User(username=username, score=score)
-        db.session.add(user)
-        db.session.commit()
+        session.add(user)
+        session.commit()
+        session.close()
 
         return {'message': 'User created successfully'}, 201
 
 api.add_resource(UserResource, '/users')
 
-def main():
-  if not db.engine.dialect.has_table(db.engine, Highscores.__tablename__):
-      db.create_all()
-  app.run( host='0.0.0.0', debug=True )
-
 if __name__ == '__main__':
-  main()
+    app.run(debug=True)

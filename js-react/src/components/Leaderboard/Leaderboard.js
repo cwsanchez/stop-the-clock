@@ -28,7 +28,7 @@ function Leaderboard(props) {
     <div className="leaderboard" >
       <ol>
         {listOfLeaders}
-        <button onClick={ () => setRefreshScore(true) } />Refresh</button>
+        <button onClick={ () => setRefreshScore(true) } >Refresh</button>
       </ol>
     </div>  
   )

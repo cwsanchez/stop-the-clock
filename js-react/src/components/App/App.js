@@ -1,6 +1,6 @@
 import logo from '../../logo.svg';
 import './App.css';
-import { getScores, submitScore } from '../../Utilities/backendRequests.js';
+import { getScores, submitScore } from '../../utilities/backendRequests.js';
 import React from 'react';
 import StopWatch from '../StopWatch/StopWatch.js';
 import Username from '../Username/Username.js';
@@ -13,8 +13,8 @@ function App() {
   const [running, setRunning] = React.useState(false);
   const [username, setUsername] = React.useState('');
   const [score, setScore] = React.useState(0);
-  const [submitUser, setSubmitUser] = React.useState();
-  const [submitScore, setSubmitScore] = React.useState();
+  const [submitUserCond, setSubmitUser] = React.useState();
+  const [submitScoreCond, setSubmitScore] = React.useState();
   const [refreshLeaderboard, setRefreshLeaderboard] = React.useState();
 
 /*
@@ -42,7 +42,7 @@ function App() {
 */
   
   React.useEffect( () => {
-    if (submitScore) {
+    if (submitScoreCond) {
       addScore();
       setSubmitScore(false);
     }
@@ -62,10 +62,10 @@ function App() {
 
 
   const addScore = () => {
-    submitScore(username, score).then( return );
+    submitScore(username, score).then( () => { return } );
   }
 
-  const checkUsernameAvailability (newUsername) => {
+  const checkUsernameAvailability = (newUsername) => {
     getScores.then( 
       (listOfScores) => {
         let scores = Object.fromEntries(listOfScores);
@@ -95,11 +95,8 @@ function App() {
   return (
     <div className="App">
       <Username
-        existingUsers={users}
         username={username}
         setUsername={setUsername}
-        addUser={addUser}
-        removeUser={removeUser}
         checkUsernameAvailability={checkUsernameAvailability}
       />
       <StopWatch
@@ -118,7 +115,7 @@ function App() {
       />
       <Leaderboard
         leaderboard={topScores}
-        submitScore={submitScore}
+        submitScore={submitScoreCond}
         refreshLeaderboard={refreshLeaderboard}
         setRefreshScore={setRefreshLeaderboard}
       />

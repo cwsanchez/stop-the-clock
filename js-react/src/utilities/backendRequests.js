@@ -34,4 +34,4 @@ const submitScore = async (username, score) => {
   }
 };
 
-export { getScore, submitScore };
+export { getScores, submitScore };
