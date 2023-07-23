@@ -50,10 +50,10 @@ function App() {
 
   React.useEffect( () => {
     if (refreshLeaderboard) {
-      getScores.then(
+      getScores().then(
         (listOfScores) => {
           let scores = Object.fromEntries(listOfScores);
-          setTopScores(scoresObject);
+          setTopScores(scores);
           setRefreshLeaderboard(false);
         }    
       )    
@@ -66,7 +66,7 @@ function App() {
   }
 
   const checkUsernameAvailability = (newUsername) => {
-    getScores.then( 
+    getScores().then( 
       (listOfScores) => {
         let scores = Object.fromEntries(listOfScores);
         let usernames = Object.keys(scores);

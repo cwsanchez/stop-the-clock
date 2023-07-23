@@ -1,6 +1,8 @@
+const backendURL = 'http://127.0.0.1:5000';
+
 const getScores = async () => {
   try {
-    const response = await fetch('http://localhost:5000/users');
+    const response = await fetch(`${backendURL}/users`);
     if (!response.ok) {
       throw new Error('Error retrieving users');
     }
@@ -14,7 +16,7 @@ const getScores = async () => {
 
 const submitScore = async (username, score) => {
   try {
-    const response = await fetch('http://localhost:5000/users', {
+    const response = await fetch(`${backendURL}/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
