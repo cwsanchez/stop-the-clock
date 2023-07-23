@@ -1,4 +1,6 @@
-# React app game where you gain points by stopping the clock on the minute. 
+# Stop the Clock!
+
+## React app game where you gain points by stopping the clock on the minute. 
 The purpose of this project is to increase my familiarity with React.
 
 ## Available Scripts
