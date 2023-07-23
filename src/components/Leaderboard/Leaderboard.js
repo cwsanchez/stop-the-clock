@@ -10,7 +10,16 @@ function Leaderboard(props) {
     }
   })    
  
-  let listOfLeaders = Object.keys(props.leaderboard).map(
+  let sortLeaderboard = (scoreboard) => {
+    const scores = Object.entries(scoreboard);
+    scores.sort( (a,b) => b[1] - a[1] );
+
+    return Object.fromEntries(scores);
+  }
+
+  let sortedLeaderboard = sortLeaderboard(props.leaderboard);
+
+  let listOfLeaders = Object.keys(sortedLeaderboard).map(
     (user) => { 
       return ( <li key={user} >{user} : {props.leaderboard[user]}</li> )
     }  
