@@ -8,6 +8,14 @@ You can choose your username and submit your score to the leaderboard, which is 
 
 All scoring and users are saved in the React state, no information is saved to a backend in its current form.
 
+
+## To run, you will need to install Node.js and node package manager (npm).
+You can install with the following commands in Linux. Or use another method if desired.
+
+`sudo apt update`
+
+`sudo apt install nodejs npm`
+
 ## Available Scripts
 
 In the project directory, you can run:
