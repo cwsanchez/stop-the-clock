@@ -3,8 +3,9 @@
 ## React app game where you gain points by stopping the clock on the minute. 
 The purpose of this project is to increase my familiarity with React. A proof of concept for a game thought up be my friends and I.
 
-The game records how many times you can stop the clock "perfectly" on the second. If you fail, the clock will reset.
+The game records how many times you can stop the clock "perfectly" on the second. If you fail, the score and clock will be reset.
 You can choose your username and submit your score to the leaderboard, which is immediately updated after submitting.
+
 All scoring and users are saved in the React state, no information is saved to a backend in its current form.
 
 ## Available Scripts
