@@ -12,6 +12,12 @@ export function formatTime(ms) {
   };
 }
 
+export function isStopSuccess(ms, mode) {
+  const cs = Math.floor(ms / 10) % 100;
+  const tolerance = mode === 'weenie' ? 5 : 0;
+  return cs <= tolerance || cs >= (100 - tolerance);
+}
+
 export function isCentisecondsZero(ms) {
   return Math.floor(ms / 10) % 100 === 0;
 }

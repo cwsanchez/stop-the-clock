@@ -13,8 +13,7 @@ test('renders Start button on load', () => {
   expect(startButton).toBeInTheDocument();
 });
 
-test('renders username input on load', () => {
+test('renders Game Mode label for mode switcher', () => {
   render(<App />);
-  const input = screen.getByPlaceholderText(/enter username/i);
-  expect(input).toBeInTheDocument();
+  expect(screen.getByText(/game mode/i)).toBeInTheDocument();
 });
