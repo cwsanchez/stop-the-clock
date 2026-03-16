@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Flame, Baby } from 'lucide-react';
+import { Trophy, Medal, Flame, Baby, Zap } from 'lucide-react';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
 
@@ -15,27 +15,49 @@ function RankBadge({ rank }) {
   );
 }
 
+const TABS = [
+  { key: 'classic', label: 'Classic', icon: Flame, activeClass: 'bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20' },
+  { key: 'weenie', label: 'Weenie Hut Jr', icon: Baby, activeClass: 'bg-amber-400/10 text-amber-400 border border-amber-400/20' },
+  { key: 'fever', label: 'Fever Legends', icon: Zap, activeClass: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+];
+
 export default function Leaderboard() {
-  const { classicLeaderboard, weenieLeaderboard, fetchLeaderboard, fetchBothLeaderboards, loading } = useLeaderboardStore();
+  const { classicLeaderboard, weenieLeaderboard, feverLeaderboard, fetchLeaderboard, fetchAllLeaderboards, loading } = useLeaderboardStore();
   const { profile } = useAuthStore();
   const [tab, setTab] = useState('classic');
 
   useEffect(() => {
-    fetchBothLeaderboards();
-  }, [fetchBothLeaderboards]);
+    fetchAllLeaderboards();
+  }, [fetchAllLeaderboards]);
 
   const handleTabChange = (newTab) => {
     setTab(newTab);
     fetchLeaderboard(newTab);
   };
 
-  const leaderboard = tab === 'classic' ? classicLeaderboard : weenieLeaderboard;
+  const leaderboardMap = {
+    classic: classicLeaderboard,
+    weenie: weenieLeaderboard,
+    fever: feverLeaderboard,
+  };
+
+  const leaderboard = leaderboardMap[tab] || [];
+  const isFever = tab === 'fever';
   const isWeenie = tab === 'weenie';
+
+  const getHighlightColor = () => {
+    if (isFever) return { bg: 'bg-red-500/5 border border-red-500/10', text: 'text-red-400' };
+    if (isWeenie) return { bg: 'bg-amber-400/5 border border-amber-400/10', text: 'text-amber-400' };
+    return { bg: 'bg-neon-cyan/5 border border-neon-cyan/10', text: 'text-neon-cyan' };
+  };
+
+  const scoreColor = isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-green';
+  const highlight = getHighlightColor();
 
   return (
     <div className="bg-dark-800/50 border border-gray-800 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Trophy size={18} className={isWeenie ? 'text-amber-400' : 'text-neon-yellow'} />
+        <Trophy size={18} className={isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-yellow'} />
         <h2 className="text-sm font-display uppercase tracking-widest text-gray-300">
           Leaderboard
         </h2>
@@ -45,28 +67,19 @@ export default function Leaderboard() {
       </div>
 
       <div className="flex gap-1 mb-4 bg-dark-900/50 rounded-xl p-1">
-        <button
-          onClick={() => handleTabChange('classic')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${
-            tab === 'classic'
-              ? 'bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20'
-              : 'text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <Flame size={12} />
-          Classic
-        </button>
-        <button
-          onClick={() => handleTabChange('weenie')}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${
-            tab === 'weenie'
-              ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
-              : 'text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <Baby size={12} />
-          Weenie Hut Jr
-        </button>
+        {TABS.map(({ key, label, icon: Icon, activeClass }) => (
+          <button
+            key={key}
+            onClick={() => handleTabChange(key)}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] sm:text-xs font-mono uppercase tracking-wider transition-all ${
+              tab === key ? activeClass : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <Icon size={12} />
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -90,27 +103,17 @@ export default function Leaderboard() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.03 }}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-mono transition-colors ${
-                    isYou
-                      ? isWeenie
-                        ? 'bg-amber-400/5 border border-amber-400/10'
-                        : 'bg-neon-cyan/5 border border-neon-cyan/10'
-                      : 'hover:bg-dark-700/50'
+                    isYou ? highlight.bg : 'hover:bg-dark-700/50'
                   }`}
                 >
                   <RankBadge rank={idx + 1} />
                   <span
-                    className={`flex-1 truncate ${
-                      isYou
-                        ? isWeenie ? 'text-amber-400' : 'text-neon-cyan'
-                        : 'text-gray-300'
-                    }`}
+                    className={`flex-1 truncate ${isYou ? highlight.text : 'text-gray-300'}`}
                   >
                     {entry.displayName}
                     {isYou && <span className="text-[10px] ml-1 opacity-60">(you)</span>}
                   </span>
-                  <span className={`tabular-nums font-display text-base ${
-                    isWeenie ? 'text-amber-400' : 'text-neon-green'
-                  }`}>
+                  <span className={`tabular-nums font-display text-base ${scoreColor}`}>
                     {entry.highScore}
                   </span>
                 </motion.div>
