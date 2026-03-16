@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 const useLeaderboardStore = create((set, get) => ({
   classicLeaderboard: [],
   weenieLeaderboard: [],
+  feverLeaderboard: [],
   loading: false,
 
   fetchLeaderboard: async (mode) => {
@@ -41,8 +42,10 @@ const useLeaderboardStore = create((set, get) => ({
 
     if (mode === 'classic') {
       set({ classicLeaderboard: entries, loading: false });
-    } else {
+    } else if (mode === 'weenie') {
       set({ weenieLeaderboard: entries, loading: false });
+    } else if (mode === 'fever') {
+      set({ feverLeaderboard: entries, loading: false });
     }
 
     return data || [];
@@ -52,6 +55,14 @@ const useLeaderboardStore = create((set, get) => ({
     await Promise.all([
       get().fetchLeaderboard('classic'),
       get().fetchLeaderboard('weenie'),
+    ]);
+  },
+
+  fetchAllLeaderboards: async () => {
+    await Promise.all([
+      get().fetchLeaderboard('classic'),
+      get().fetchLeaderboard('weenie'),
+      get().fetchLeaderboard('fever'),
     ]);
   },
 
@@ -82,7 +93,7 @@ const useLeaderboardStore = create((set, get) => ({
       isNewHigh = true;
     }
 
-    await get().fetchBothLeaderboards();
+    await get().fetchAllLeaderboards();
     return isNewHigh;
   },
 
