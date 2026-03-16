@@ -149,8 +149,7 @@ export default function App() {
       playNewBest();
       setPersonalBest(score);
     }
-    fetchBothLeaderboards();
-  }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest, fetchBothLeaderboards]);
+  }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest]);
 
   const handleReset = useCallback(() => {
     resetTimerLoop();
