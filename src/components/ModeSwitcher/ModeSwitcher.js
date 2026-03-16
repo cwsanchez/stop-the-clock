@@ -32,7 +32,6 @@ export default function ModeSwitcher() {
           }`}
           animate={{
             x: mode === 'classic' ? 0 : '100%',
-            width: '50%',
           }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           style={{ left: '4px', width: 'calc(50% - 4px)' }}
@@ -41,7 +40,7 @@ export default function ModeSwitcher() {
         <button
           onClick={() => handleSwitch('classic')}
           disabled={disabled}
-          className={`relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
+          className={`relative z-10 flex flex-1 justify-center items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
             mode === 'classic'
               ? 'text-neon-cyan'
               : 'text-gray-500 hover:text-gray-300'
@@ -54,7 +53,7 @@ export default function ModeSwitcher() {
         <button
           onClick={() => handleSwitch('weenie')}
           disabled={disabled}
-          className={`relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
+          className={`relative z-10 flex flex-1 justify-center items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
             mode === 'weenie'
               ? 'text-amber-400'
               : 'text-gray-500 hover:text-gray-300'
