@@ -134,7 +134,9 @@ export default function App() {
     }
   }, [user, mode, fetchUserScores, setPersonalBest]);
 
-  // Fever mode inactivity checker
+  // Fever mode inactivity checker - DISABLED due to crash bug
+  // TODO: Fix this useEffect - it appears to cause browser crashes
+  /*
   useEffect(() => {
     if (!feverRunActive) {
       if (feverCheckRef.current) {
@@ -174,6 +176,7 @@ export default function App() {
       }
     };
   }, [feverRunActive, endFeverRun, stopTimer, feverResetMultiplier, playFeverEnd]);
+  */
 
   const fireConfetti = useCallback(() => {
     const colors = isFever
@@ -400,10 +403,11 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <FeverParticles
+              {/* FeverParticles disabled for debugging */}
+              {/* <FeverParticles
                 multiplier={currentMultiplier}
                 active={feverRunActive}
-              />
+              /> */}
 
               <Timer />
               <GameMessage />
