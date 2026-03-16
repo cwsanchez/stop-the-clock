@@ -374,9 +374,10 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
           <div className="flex flex-col items-center">
-            {isFever && !feverRunActive && !feverEnded && (
+            {/* FeverRulesPanel disabled due to crash bug - TODO: fix AnimatePresence issue */}
+            {/* {isFever && !feverRunActive && !feverEnded && (
               <FeverRulesPanel />
-            )}
+            )} */}
 
             <motion.div
               className={`relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm transition-all duration-500 ${
