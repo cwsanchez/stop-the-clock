@@ -59,15 +59,15 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset }
 
       {phase === 'stopped-success' && (
         <>
+          {user && score > 0 && (
+            <ActionButton onClick={onSubmit} icon={Trophy} label="Submit" variant="submit" />
+          )}
           <ActionButton
             onClick={onChain}
             icon={Zap}
             label="Chain"
             variant={isWeenie ? 'chain-weenie' : 'chain'}
           />
-          {user && score > 0 && (
-            <ActionButton onClick={onSubmit} icon={Trophy} label="Submit" variant="submit" />
-          )}
           <ActionButton onClick={onReset} icon={RotateCcw} label="Reset" variant="reset" />
         </>
       )}
