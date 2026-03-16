@@ -46,7 +46,7 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset, 
 
   return (
     <motion.div
-      className="flex flex-wrap justify-center gap-3 mt-8"
+      className={`flex flex-wrap justify-center gap-3 mt-8${isFever ? ' min-h-[72px] items-center' : ''}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}

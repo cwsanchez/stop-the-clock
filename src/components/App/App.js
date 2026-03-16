@@ -369,10 +369,6 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
           <div className="flex flex-col items-center">
-            {isFever && !feverRunActive && !feverEnded && (
-              <FeverRulesPanel />
-            )}
-
             <motion.div
               className={`relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm transition-all duration-500 ${
                 isFever
@@ -392,6 +388,8 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
+              {isFever && <FeverRulesPanel />}
+
               <FeverParticles
                 multiplier={currentMultiplier}
                 active={feverRunActive}
