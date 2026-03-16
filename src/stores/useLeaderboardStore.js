@@ -7,14 +7,15 @@ const useLeaderboardStore = create((set, get) => ({
   loading: false,
 
   fetchLeaderboard: async (mode) => {
+    console.log(`🔄 Fetching leaderboard for mode: ${mode}`);
     set({ loading: true });
+
     const { data, error } = await supabase
       .from('scores')
       .select(`
         high_score,
         best_streak,
         updated_at,
-        user_id,
         profiles!user_id (
           display_name
         )
@@ -23,22 +24,28 @@ const useLeaderboardStore = create((set, get) => ({
       .order('high_score', { ascending: false })
       .limit(50);
 
-    if (!error && data) {
-      const entries = data.map((row) => ({
-        userId: row.user_id,
-        displayName: row.profiles?.display_name || 'Anonymous',
-        highScore: row.high_score,
-        bestStreak: row.best_streak,
-        updatedAt: row.updated_at,
-      }));
-      if (mode === 'classic') {
-        set({ classicLeaderboard: entries, loading: false });
-      } else {
-        set({ weenieLeaderboard: entries, loading: false });
-      }
-    } else {
+    if (error) {
+      console.error('❌ Leaderboard fetch failed:', error);
       set({ loading: false });
+      return [];
     }
+
+    console.log(`✅ Leaderboard data received for ${mode}:`, data);
+
+    const entries = (data || []).map((row) => ({
+      displayName: row.profiles?.display_name || 'Anonymous',
+      highScore: row.high_score,
+      bestStreak: row.best_streak,
+      updatedAt: row.updated_at,
+    }));
+
+    if (mode === 'classic') {
+      set({ classicLeaderboard: entries, loading: false });
+    } else {
+      set({ weenieLeaderboard: entries, loading: false });
+    }
+
+    return data || [];
   },
 
   fetchBothLeaderboards: async () => {

@@ -17,7 +17,7 @@ function RankBadge({ rank }) {
 
 export default function Leaderboard() {
   const { classicLeaderboard, weenieLeaderboard, fetchLeaderboard, fetchBothLeaderboards, loading } = useLeaderboardStore();
-  const { user } = useAuthStore();
+  const { profile } = useAuthStore();
   const [tab, setTab] = useState('classic');
 
   useEffect(() => {
@@ -82,10 +82,10 @@ export default function Leaderboard() {
         <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin">
           <AnimatePresence mode="popLayout">
             {leaderboard.map((entry, idx) => {
-              const isYou = user && entry.userId === user.id;
+              const isYou = profile && entry.displayName === profile.display_name;
               return (
                 <motion.div
-                  key={entry.userId}
+                  key={`${entry.displayName}-${idx}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.03 }}
