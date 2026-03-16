@@ -1,48 +1,187 @@
 # Stop the Clock!
 
-## React app game where you gain points by stopping the clock on the minute. 
-The purpose of this project is to increase my familiarity with React. A proof of concept for a game thought up be my friends and I.
+A precision timing game built with React 18. Stop the clock **exactly** when the centiseconds hit `:00` to score a point and keep your streak alive. Miss by even one centisecond and your streak resets.
 
-The game records how many times you can stop the clock "perfectly" on the second. If you fail, the score and clock will be reset.
-You can choose your username and submit your score to the leaderboard, which is immediately updated after submitting.
+> Can you chain 10 perfect stops in a row?
 
-All scoring and users are saved in the React state, no information is saved to a backend in its current form.
+---
 
+## How to Play
 
-## To run, you will need to install Node.js and node package manager (npm).
-You can install with the following commands in Linux. Or use another method if desired.
+1. **Enter a username** (optional but required to submit scores)
+2. Press **Start** to begin the timer
+3. Press **Stop** when the centiseconds display reads **00**
+4. If you nail it, press **Chain** to keep going and build your streak
+5. Miss? Your streak is saved. Press **Reset** and try again
+6. **Submit** your score to the leaderboard when you're ready
 
-`sudo apt update`
+**Tip:** The timer uses `requestAnimationFrame` + `performance.now()` for sub-millisecond precision. No cheating with slow intervals!
 
-`sudo apt install nodejs npm`
+---
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Precision Timer** - `requestAnimationFrame` + `performance.now()` for rock-solid centisecond accuracy
+- **Dark Cyber/Neon Theme** - Glowing timer, neon accent colors, subtle ambient lighting
+- **Persistent Storage** - Scores survive refresh, browser close, and multiple sessions (IndexedDB via Dexie.js)
+- **Global Leaderboard** - Top 50 scores, sorted and animated
+- **Personal History** - Last 10 attempts with timestamps
+- **Sound Effects** - Oscillator-based success/fail/new-best chimes
+- **Confetti** - Particle explosions on new personal bests
+- **Responsive** - Fully playable on mobile and desktop
+- **Smooth Animations** - Framer Motion throughout
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Architecture
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```mermaid
+graph TD
+    A[App] --> B[Timer]
+    A --> C[Controls]
+    A --> D[ScoreDisplay]
+    A --> E[Username]
+    A --> F[Leaderboard]
+    A --> G[History]
 
-### `npm test`
+    H[useTimerStore] --> B
+    H --> C
+    I[useGameStore] --> D
+    I --> C
+    I --> E
+    J[useLeaderboardStore] --> F
+    J --> G
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+    K[Dexie.js / IndexedDB] --> J
+    L[useTimer Hook] --> H
+    M[useSound Hook] --> A
 
-### `npm run build`
+    style A fill:#1a1a2e,stroke:#00f0ff,color:#fff
+    style K fill:#1a1a2e,stroke:#39ff14,color:#fff
+    style H fill:#1a1a2e,stroke:#ff00e5,color:#fff
+    style I fill:#1a1a2e,stroke:#ff00e5,color:#fff
+    style J fill:#1a1a2e,stroke:#ff00e5,color:#fff
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### State Management (Zustand)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Store | Purpose |
+|---|---|
+| `useTimerStore` | Timer elapsed time, running state, phase (idle/running/success/fail) |
+| `useGameStore` | Username, score, personal best, last result |
+| `useLeaderboardStore` | Leaderboard data, personal history, DB operations |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Persistence (Dexie.js / IndexedDB)
 
-### `npm run eject`
+| Table | Description |
+|---|---|
+| `highScores` | Per-user high scores |
+| `attempts` | Last 10 attempts per user with timestamps |
+| `leaderboard` | Global top 50 scores (unique per username) |
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React 18 |
+| Styling | Tailwind CSS 3 |
+| State | Zustand |
+| Persistence | Dexie.js (IndexedDB) |
+| Animation | Framer Motion |
+| Icons | Lucide React |
+| Effects | Canvas Confetti, Web Audio API |
+| Build | Create React App |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16+
+- npm 8+
+
+### Installation
+
+```bash
+git clone <repo-url>
+cd js-react
+npm install
+```
+
+### Development
+
+```bash
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Build
+
+```bash
+npm run build
+```
+
+### Tests
+
+```bash
+CI=true npm test
+```
+
+---
+
+## Project Structure
+
+```
+src/
+  db/
+    database.js         # Dexie.js database schema and queries
+  stores/
+    useTimerStore.js    # Timer state (Zustand)
+    useGameStore.js     # Game state (Zustand)
+    useLeaderboardStore.js  # Leaderboard + history (Zustand)
+  hooks/
+    useTimer.js         # requestAnimationFrame timer loop
+    useSound.js         # Web Audio API sound effects
+  utils/
+    formatTime.js       # Time formatting utilities
+  components/
+    App/App.js          # Main layout and game orchestration
+    Timer/Timer.js      # Large animated timer display
+    Controls/Controls.js    # Start / Stop / Chain / Submit / Reset
+    ScoreDisplay/ScoreDisplay.js  # Current streak + personal best
+    Username/Username.js    # Login/logout input
+    Leaderboard/Leaderboard.js  # Top 50 global scores
+    History/History.js      # Recent personal attempts
+```
+
+---
+
+## Future Ideas
+
+- Multiplayer mode via WebRTC or WebSocket
+- Difficulty levels (stop on :50, :25, etc.)
+- Achievement badges
+- Custom themes selector
+- PWA offline support
+- Server-synced leaderboard
+
+---
+
+## What's New (v2.0)
+
+- Complete rewrite from class-based to modern functional React 18
+- Replaced `setInterval` with `requestAnimationFrame` + `performance.now()`
+- Fixed all mutable state bugs (direct array/object mutations)
+- Added Zustand for clean state management (3 stores)
+- Added Dexie.js persistence (IndexedDB) - scores survive refresh
+- Dark neon/cyber UI theme with Tailwind CSS
+- Framer Motion animations throughout
+- Sound effects (Web Audio oscillator)
+- Confetti on new personal bests
+- Leaderboard (top 50) + personal history (last 10)
+- Fully responsive layout (mobile + desktop)
+- Cleaned up component hierarchy - no more prop drilling
