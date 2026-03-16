@@ -15,10 +15,11 @@ const useLeaderboardStore = create((set, get) => ({
         best_streak,
         updated_at,
         user_id,
-        profiles!user_id(display_name)
+        profiles!user_id (
+          display_name
+        )
       `)
       .eq('mode', mode)
-      .gt('high_score', 0)
       .order('high_score', { ascending: false })
       .limit(50);
 
