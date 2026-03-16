@@ -26,7 +26,7 @@ function GameMessage() {
     idle: { text: 'Press Start to begin', color: 'text-gray-500' },
     running: { text: 'Stop when centiseconds hit 00!', color: 'text-neon-cyan' },
     'stopped-success': { text: 'Perfect! Chain to keep going!', color: 'text-neon-green' },
-    'stopped-fail': { text: 'Missed! Your streak is saved.', color: 'text-red-400' },
+    'stopped-fail': { text: 'Missed! Submit your score or reset.', color: 'text-red-400' },
   };
 
   const msg = messages[phase] || messages.idle;
