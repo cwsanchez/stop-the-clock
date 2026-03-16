@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import { Play, Square, RotateCcw, Trophy, Zap } from 'lucide-react';
 import useTimerStore from '../../stores/useTimerStore';
 import useGameStore from '../../stores/useGameStore';
+import useAuthStore from '../../stores/useAuthStore';
 
 function ActionButton({ onClick, icon: Icon, label, variant = 'default', disabled = false }) {
   const variants = {
     start: 'bg-neon-cyan/10 border-neon-cyan/50 text-neon-cyan hover:bg-neon-cyan/20 hover:shadow-neon-cyan',
+    'start-weenie': 'bg-amber-400/10 border-amber-400/50 text-amber-400 hover:bg-amber-400/20',
     stop: 'bg-neon-pink/10 border-neon-pink/50 text-neon-pink hover:bg-neon-pink/20 hover:shadow-neon-pink',
     chain: 'bg-neon-green/10 border-neon-green/50 text-neon-green hover:bg-neon-green/20 hover:shadow-neon-green',
+    'chain-weenie': 'bg-amber-400/10 border-amber-400/50 text-amber-400 hover:bg-amber-400/20',
     submit: 'bg-neon-yellow/10 border-neon-yellow/50 text-neon-yellow hover:bg-neon-yellow/20',
     reset: 'bg-gray-500/10 border-gray-500/50 text-gray-400 hover:bg-gray-500/20',
     default: 'bg-dark-600 border-gray-600 text-gray-300 hover:bg-dark-500',
@@ -30,7 +33,9 @@ function ActionButton({ onClick, icon: Icon, label, variant = 'default', disable
 
 export default function Controls({ onStop, onStart, onChain, onSubmit, onReset }) {
   const { phase } = useTimerStore();
-  const { score, username } = useGameStore();
+  const { score, mode } = useGameStore();
+  const { user } = useAuthStore();
+  const isWeenie = mode === 'weenie';
 
   return (
     <motion.div
@@ -40,7 +45,12 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset }
       transition={{ delay: 0.2 }}
     >
       {phase === 'idle' && (
-        <ActionButton onClick={onStart} icon={Play} label="Start" variant="start" />
+        <ActionButton
+          onClick={onStart}
+          icon={Play}
+          label="Start"
+          variant={isWeenie ? 'start-weenie' : 'start'}
+        />
       )}
 
       {phase === 'running' && (
@@ -49,8 +59,13 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset }
 
       {phase === 'stopped-success' && (
         <>
-          <ActionButton onClick={onChain} icon={Zap} label="Chain" variant="chain" />
-          {username && score > 0 && (
+          <ActionButton
+            onClick={onChain}
+            icon={Zap}
+            label="Chain"
+            variant={isWeenie ? 'chain-weenie' : 'chain'}
+          />
+          {user && score > 0 && (
             <ActionButton onClick={onSubmit} icon={Trophy} label="Submit" variant="submit" />
           )}
           <ActionButton onClick={onReset} icon={RotateCcw} label="Reset" variant="reset" />
@@ -59,11 +74,17 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset }
 
       {phase === 'stopped-fail' && (
         <>
-          {username && score > 0 && (
+          {user && score > 0 && (
             <ActionButton onClick={onSubmit} icon={Trophy} label="Submit" variant="submit" />
           )}
           <ActionButton onClick={onReset} icon={RotateCcw} label="Reset" variant="reset" />
         </>
+      )}
+
+      {!user && phase !== 'running' && (
+        <p className="w-full text-center text-xs text-gray-600 font-mono mt-2">
+          Sign in to save scores & compete on the leaderboard
+        </p>
       )}
     </motion.div>
   );

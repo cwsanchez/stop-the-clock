@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 
 const useGameStore = create((set, get) => ({
-  username: '',
+  mode: 'classic', // 'classic' | 'weenie'
   score: 0,
   personalBest: 0,
+  bestStreak: 0,
   isNewBest: false,
   lastResult: null, // 'success' | 'fail' | null
 
-  setUsername: (username) => set({ username }),
+  setMode: (mode) => set({ mode, score: 0, lastResult: null, isNewBest: false }),
 
   incrementScore: () => {
     const { score, personalBest } = get();
@@ -18,6 +19,7 @@ const useGameStore = create((set, get) => ({
       lastResult: 'success',
       isNewBest,
       personalBest: isNewBest ? newScore : personalBest,
+      bestStreak: isNewBest ? newScore : get().bestStreak,
     });
   },
 
@@ -26,6 +28,7 @@ const useGameStore = create((set, get) => ({
   resetGame: () => set({ score: 0, lastResult: null, isNewBest: false }),
 
   setPersonalBest: (personalBest) => set({ personalBest }),
+  setBestStreak: (bestStreak) => set({ bestStreak }),
 
   clearResult: () => set({ lastResult: null, isNewBest: false }),
 }));
