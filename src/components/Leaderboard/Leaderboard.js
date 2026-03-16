@@ -16,13 +16,18 @@ function RankBadge({ rank }) {
 }
 
 export default function Leaderboard() {
-  const { classicLeaderboard, weenieLeaderboard, fetchBothLeaderboards, loading } = useLeaderboardStore();
+  const { classicLeaderboard, weenieLeaderboard, fetchLeaderboard, fetchBothLeaderboards, loading } = useLeaderboardStore();
   const { user } = useAuthStore();
   const [tab, setTab] = useState('classic');
 
   useEffect(() => {
     fetchBothLeaderboards();
   }, [fetchBothLeaderboards]);
+
+  const handleTabChange = (newTab) => {
+    setTab(newTab);
+    fetchLeaderboard(newTab);
+  };
 
   const leaderboard = tab === 'classic' ? classicLeaderboard : weenieLeaderboard;
   const isWeenie = tab === 'weenie';
@@ -41,7 +46,7 @@ export default function Leaderboard() {
 
       <div className="flex gap-1 mb-4 bg-dark-900/50 rounded-xl p-1">
         <button
-          onClick={() => setTab('classic')}
+          onClick={() => handleTabChange('classic')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${
             tab === 'classic'
               ? 'bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20'
@@ -52,7 +57,7 @@ export default function Leaderboard() {
           Classic
         </button>
         <button
-          onClick={() => setTab('weenie')}
+          onClick={() => handleTabChange('weenie')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all ${
             tab === 'weenie'
               ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20'
