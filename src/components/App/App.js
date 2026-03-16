@@ -110,8 +110,7 @@ export default function App() {
   } = useSound();
 
   const [activeTab, setActiveTab] = useState('leaderboard');
-  const feverCheckRef = useRef(null);
-  const prevMultiplierRef = useRef(1);
+  const feverIntervalRef = useRef(null);
 
   const isFever = mode === 'fever';
   const isWeenie = mode === 'weenie';
@@ -134,19 +133,16 @@ export default function App() {
     }
   }, [user, mode, fetchUserScores, setPersonalBest]);
 
-  // Fever mode inactivity checker - DISABLED due to crash bug
-  // TODO: Fix this useEffect - it appears to cause browser crashes
-  /*
   useEffect(() => {
     if (!feverRunActive) {
-      if (feverCheckRef.current) {
-        cancelAnimationFrame(feverCheckRef.current);
-        feverCheckRef.current = null;
+      if (feverIntervalRef.current) {
+        clearInterval(feverIntervalRef.current);
+        feverIntervalRef.current = null;
       }
       return;
     }
 
-    const checkFever = () => {
+    feverIntervalRef.current = setInterval(() => {
       const state = useGameStore.getState();
       const timerState = useTimerStore.getState();
 
@@ -164,19 +160,15 @@ export default function App() {
       if (msSinceLastHit >= 1000 && state.currentMultiplier > 1) {
         feverResetMultiplier();
       }
-
-      feverCheckRef.current = requestAnimationFrame(checkFever);
-    };
-
-    feverCheckRef.current = requestAnimationFrame(checkFever);
+    }, 250);
 
     return () => {
-      if (feverCheckRef.current) {
-        cancelAnimationFrame(feverCheckRef.current);
+      if (feverIntervalRef.current) {
+        clearInterval(feverIntervalRef.current);
+        feverIntervalRef.current = null;
       }
     };
   }, [feverRunActive, endFeverRun, stopTimer, feverResetMultiplier, playFeverEnd]);
-  */
 
   const fireConfetti = useCallback(() => {
     const colors = isFever
@@ -377,10 +369,9 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
           <div className="flex flex-col items-center">
-            {/* FeverRulesPanel disabled due to crash bug - TODO: fix AnimatePresence issue */}
-            {/* {isFever && !feverRunActive && !feverEnded && (
+            {isFever && !feverRunActive && !feverEnded && (
               <FeverRulesPanel />
-            )} */}
+            )}
 
             <motion.div
               className={`relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm transition-all duration-500 ${
@@ -394,20 +385,17 @@ export default function App() {
               }`}
               style={
                 isFever && feverRunActive && currentMultiplier >= 3
-                  ? {
-                      animation: 'fire-glow 1s ease-in-out infinite',
-                    }
+                  ? { animation: 'fire-glow 1s ease-in-out infinite' }
                   : {}
               }
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              {/* FeverParticles disabled for debugging */}
-              {/* <FeverParticles
+              <FeverParticles
                 multiplier={currentMultiplier}
                 active={feverRunActive}
-              /> */}
+              />
 
               <Timer />
               <GameMessage />
