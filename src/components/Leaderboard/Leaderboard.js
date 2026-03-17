@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Flame, Baby, Zap } from 'lucide-react';
+import { Trophy, Medal, Flame, Baby, Zap, Clock } from 'lucide-react';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
 
@@ -12,6 +12,38 @@ function RankBadge({ rank }) {
     <span className="text-xs text-gray-500 font-mono w-6 text-center">
       {rank}
     </span>
+  );
+}
+
+function getTimeUntilNextHour() {
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setMinutes(0, 0, 0);
+  nextHour.setHours(nextHour.getHours() + 1);
+  return nextHour - now;
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
+function HourlyCountdown() {
+  const [remaining, setRemaining] = useState(getTimeUntilNextHour);
+
+  useEffect(() => {
+    const tick = () => setRemaining(getTimeUntilNextHour());
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-mono">
+      <Clock size={10} className="text-gray-600" />
+      <span>{formatCountdown(remaining)} until reset</span>
+    </div>
   );
 }
 
@@ -56,14 +88,18 @@ export default function Leaderboard() {
 
   return (
     <div className="bg-dark-800/50 border border-gray-800 rounded-2xl p-4 sm:p-5">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-1">
         <Trophy size={18} className={isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-yellow'} />
         <h2 className="text-sm font-display uppercase tracking-widest text-gray-300">
           Leaderboard
         </h2>
         <span className="text-xs text-gray-600 font-mono ml-auto">
-          Top 50
+          Hourly
         </span>
+      </div>
+
+      <div className="flex justify-end mb-3">
+        <HourlyCountdown />
       </div>
 
       <div className="flex gap-1 mb-4 bg-dark-900/50 rounded-xl p-1">

@@ -10,6 +10,7 @@ import Leaderboard from '../Leaderboard/Leaderboard';
 import ModeSwitcher from '../ModeSwitcher/ModeSwitcher';
 import UserHeader from '../UserHeader/UserHeader';
 import AuthModal from '../AuthModal/AuthModal';
+import ChallengeModal from '../ChallengeModal/ChallengeModal';
 import FeverParticles from '../FeverParticles/FeverParticles';
 import FeverRulesPanel from '../FeverRulesPanel/FeverRulesPanel';
 import FeverEndScreen from '../FeverEndScreen/FeverEndScreen';
@@ -55,7 +56,6 @@ function GameMessage() {
   }
 
   if (isFever && feverEnded) {
-    // Reserve the same vertical space as the other fever messages so Controls never shifts
     return <div className="mt-4 h-5" />;
   }
 
@@ -111,6 +111,8 @@ export default function App() {
   } = useSound();
 
   const [activeTab, setActiveTab] = useState('leaderboard');
+  const [showChallenge, setShowChallenge] = useState(false);
+  const [rateLimitMsg, setRateLimitMsg] = useState('');
   const feverIntervalRef = useRef(null);
 
   const isFever = mode === 'fever';
@@ -291,15 +293,40 @@ export default function App() {
     setTimeout(() => startTimer(), 50);
   }, [clearResult, resetTimerLoop, resetTimer, startTimer]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     if (!user || score === 0) return;
-    const isNew = await submitScore(user.id, mode, score);
+
+    const { lastSubmitTime } = useLeaderboardStore.getState();
+    if (lastSubmitTime && Date.now() - lastSubmitTime < 5000) {
+      setRateLimitMsg('Wait 5s between submissions');
+      setTimeout(() => setRateLimitMsg(''), 3000);
+      return;
+    }
+
+    setShowChallenge(true);
+  }, [user, score]);
+
+  const handleChallengeSuccess = useCallback(async () => {
+    setShowChallenge(false);
+    const result = await submitScore(user.id, mode, score);
+
+    if (result?.rateLimited) {
+      setRateLimitMsg('Wait 5s between submissions');
+      setTimeout(() => setRateLimitMsg(''), 3000);
+      return;
+    }
+
+    const isNew = result?.isNewHigh ?? result;
     if (isNew) {
       fireConfetti();
       playNewBest();
       setPersonalBest(score);
     }
   }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest]);
+
+  const handleChallengeCancel = useCallback(() => {
+    setShowChallenge(false);
+  }, []);
 
   const handleReset = useCallback(() => {
     if (isFever) {
@@ -398,6 +425,20 @@ export default function App() {
 
               <Timer />
               <GameMessage />
+
+              <AnimatePresence>
+                {rateLimitMsg && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-xs text-red-400 font-mono text-center mt-2 bg-red-400/5 border border-red-400/10 rounded-lg py-2 px-3"
+                  >
+                    {rateLimitMsg}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+
               <Controls
                 onStart={handleStart}
                 onStop={handleStop}
@@ -436,6 +477,11 @@ export default function App() {
       </div>
 
       <AuthModal />
+      <ChallengeModal
+        isOpen={showChallenge}
+        onSuccess={handleChallengeSuccess}
+        onCancel={handleChallengeCancel}
+      />
     </div>
   );
 }
