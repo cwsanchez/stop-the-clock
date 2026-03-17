@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { supabase, forceReconnect } from '../lib/supabaseClient';
 
 const RATE_LIMIT_MS = 5000;
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 5_000;
 
 function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
   let timeoutId;
@@ -185,13 +185,5 @@ const useLeaderboardStore = create((set, get) => ({
 setInterval(() => {
   useLeaderboardStore.getState().fetchAllLeaderboards();
 }, 30_000);
-
-// refetchOnWindowFocus: force-reconnect + re-fetch when the tab becomes visible
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    forceReconnect();
-    useLeaderboardStore.getState().fetchAllLeaderboards();
-  }
-});
 
 export default useLeaderboardStore;

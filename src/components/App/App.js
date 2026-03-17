@@ -25,7 +25,6 @@ import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
 import { supabase, forceReconnect } from '../../lib/supabaseClient';
-
 function GameMessage() {
   const { phase } = useTimerStore();
   const { lastResult, mode, feverRunActive, feverEnded, currentMultiplier } = useGameStore();
@@ -154,17 +153,6 @@ export default function App() {
     keepAliveId = setInterval(ping, 60_000);
 
     return () => clearInterval(keepAliveId);
-  }, []);
-
-  // Hard-reset Supabase client on any button click (submit, mode switch, leaderboard tab, etc.)
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.target.closest('button')) {
-        forceReconnect();
-      }
-    };
-    document.addEventListener('click', handler, true);
-    return () => document.removeEventListener('click', handler, true);
   }, []);
 
   // Force-reconnect + full refetch when the tab regains focus
