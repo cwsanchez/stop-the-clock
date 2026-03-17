@@ -63,12 +63,12 @@ export default function ModeSwitcher() {
             key={key}
             onClick={() => handleSwitch(key)}
             disabled={disabled}
-            className={`relative z-10 flex flex-1 justify-center items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed whitespace-nowrap ${
+            className={`relative z-10 flex flex-1 sm:min-w-[11rem] justify-center items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
               mode === key ? color : 'text-gray-500 hover:text-gray-300'
             }`}
           >
-            <Icon size={16} />
-            {label}
+            <Icon size={16} className="flex-shrink-0" />
+            <span className="hidden sm:inline whitespace-nowrap">{label}</span>
           </button>
         ))}
       </div>
