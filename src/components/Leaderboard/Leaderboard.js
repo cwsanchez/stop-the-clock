@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Flame, Baby, Zap, Swords, Clock } from 'lucide-react';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
+import { forceReconnect } from '../../lib/supabaseClient';
 
 function RankBadge({ rank }) {
   if (rank === 1) return <span className="text-lg">{'\u{1F947}'}</span>;
@@ -100,6 +101,17 @@ export default function Leaderboard({ iconsOnly = false }) {
         <h2 className="text-sm font-display uppercase tracking-widest text-gray-300">
           Leaderboard
         </h2>
+        {process.env.NODE_ENV === 'development' && (
+          <button
+            onClick={() => {
+              forceReconnect();
+              fetchAllLeaderboards();
+            }}
+            className="text-[10px] text-gray-500 hover:text-neon-cyan font-mono px-2 py-0.5 border border-gray-700 hover:border-gray-500 rounded transition-colors"
+          >
+            Refresh Everything
+          </button>
+        )}
         <span className="text-xs text-gray-600 font-mono ml-auto">
           Hourly
         </span>

@@ -1,7 +1,18 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, forceReconnect } from '../lib/supabaseClient';
 
 const RATE_LIMIT_MS = 5000;
+const FETCH_TIMEOUT_MS = 10_000;
+
+function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Supabase request timed out')), ms);
+  });
+  return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() =>
+    clearTimeout(timeoutId),
+  );
+}
 
 const useLeaderboardStore = create((set, get) => ({
   classicLeaderboard: [],
@@ -20,17 +31,37 @@ const useLeaderboardStore = create((set, get) => ({
   fetchLeaderboard: async (mode) => {
     set({ loading: true });
 
-    const { data, error } = await supabase
-      .from('scores')
-      .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
-      .eq('mode', mode)
-      .order('high_score', { ascending: false })
-      .limit(50);
+    const doQuery = () =>
+      supabase
+        .from('scores')
+        .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
+        .eq('mode', mode)
+        .order('high_score', { ascending: false })
+        .limit(50);
 
-    if (error) {
-      console.error('Leaderboard fetch failed:', error);
-      set({ loading: false });
-      return [];
+    let data, error;
+
+    try {
+      const result = await withTimeout(doQuery());
+      data = result.data;
+      error = result.error;
+      if (error) throw error;
+    } catch (err) {
+      forceReconnect();
+      try {
+        const retryResult = await withTimeout(doQuery());
+        data = retryResult.data;
+        error = retryResult.error;
+        if (error) {
+          console.error('Leaderboard fetch failed after retry:', error);
+          set({ loading: false });
+          return [];
+        }
+      } catch (retryErr) {
+        console.error('Leaderboard fetch failed after retry:', retryErr);
+        set({ loading: false });
+        return [];
+      }
     }
 
     const entries = (data || []).map((row) => ({
@@ -155,9 +186,10 @@ setInterval(() => {
   useLeaderboardStore.getState().fetchAllLeaderboards();
 }, 30_000);
 
-// refetchOnWindowFocus: re-fetch when the tab becomes visible after being hidden
+// refetchOnWindowFocus: force-reconnect + re-fetch when the tab becomes visible
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
+    forceReconnect();
     useLeaderboardStore.getState().fetchAllLeaderboards();
   }
 });

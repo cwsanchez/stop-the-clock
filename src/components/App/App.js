@@ -24,7 +24,7 @@ import useJourneyStore from '../../stores/useJourneyStore';
 import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, forceReconnect } from '../../lib/supabaseClient';
 
 function GameMessage() {
   const { phase } = useTimerStore();
@@ -155,6 +155,29 @@ export default function App() {
 
     return () => clearInterval(keepAliveId);
   }, []);
+
+  // Hard-reset Supabase client on any button click (submit, mode switch, leaderboard tab, etc.)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.closest('button')) {
+        forceReconnect();
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, []);
+
+  // Force-reconnect + full refetch when the tab regains focus
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        forceReconnect();
+        fetchAllLeaderboards();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchAllLeaderboards]);
 
   useEffect(() => {
     if (!feverRunActive) {
