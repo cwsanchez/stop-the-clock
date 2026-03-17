@@ -44,9 +44,70 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset, 
   const isWeenie = mode === 'weenie';
   const isFever = mode === 'fever';
 
+  if (isFever) {
+    return (
+      <motion.div
+        className="flex flex-col items-center gap-3 mt-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        {/*
+          Fixed-height container: START FEVER, HIT!, and PLAY AGAIN are all absolutely
+          centered here so they never shift position or change the container size.
+        */}
+        <div className="relative h-[64px] w-full">
+          {phase === 'idle' && !feverRunActive && !feverEnded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ActionButton
+                onClick={onStart}
+                icon={Play}
+                label="Start Fever"
+                variant="start-fever"
+                size="large"
+              />
+            </div>
+          )}
+          {feverRunActive && phase === 'running' && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ActionButton
+                onClick={onFeverHit}
+                icon={Zap}
+                label="HIT!"
+                variant="fever-hit"
+                size="large"
+              />
+            </div>
+          )}
+          {feverEnded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ActionButton
+                onClick={onReset}
+                icon={RotateCcw}
+                label="Play Again"
+                variant="start-fever"
+                size="large"
+              />
+            </div>
+          )}
+        </div>
+
+        {feverEnded && user && score > 0 && (
+          <ActionButton onClick={onSubmit} icon={Trophy} label="Submit Score" variant="submit" />
+        )}
+
+        {!user && !feverRunActive && (
+          <p className="w-full text-center text-xs text-gray-600 font-mono mt-2">
+            Sign in to save scores & compete on the leaderboard
+          </p>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
-      className={`flex flex-wrap justify-center gap-3 mt-8${isFever ? ' min-h-[72px] items-center' : ''}`}
+      className="flex flex-wrap justify-center gap-3 mt-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
@@ -55,19 +116,8 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset, 
         <ActionButton
           onClick={onStart}
           icon={Play}
-          label={isFever ? 'Start Fever' : 'Start'}
-          variant={isFever ? 'start-fever' : isWeenie ? 'start-weenie' : 'start'}
-          size={isFever ? 'large' : 'normal'}
-        />
-      )}
-
-      {isFever && feverRunActive && phase === 'running' && (
-        <ActionButton
-          onClick={onFeverHit}
-          icon={Zap}
-          label="HIT!"
-          variant="fever-hit"
-          size="large"
+          label="Start"
+          variant={isWeenie ? 'start-weenie' : 'start'}
         />
       )}
 
@@ -96,15 +146,6 @@ export default function Controls({ onStop, onStart, onChain, onSubmit, onReset, 
             <ActionButton onClick={onSubmit} icon={Trophy} label="Submit" variant="submit" />
           )}
           <ActionButton onClick={onReset} icon={RotateCcw} label="Reset" variant="reset" />
-        </>
-      )}
-
-      {isFever && feverEnded && (
-        <>
-          {user && score > 0 && (
-            <ActionButton onClick={onSubmit} icon={Trophy} label="Submit Score" variant="submit" />
-          )}
-          <ActionButton onClick={onReset} icon={RotateCcw} label="Play Again" variant="start-fever" />
         </>
       )}
 
