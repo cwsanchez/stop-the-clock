@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Swords, Heart, Zap, Ghost, Shield, Play, RotateCcw, Trophy, Info, X } from 'lucide-react';
+import { Swords, Heart, Zap, Ghost, Shield, Play } from 'lucide-react';
 import useTimerStore from '../../stores/useTimerStore';
 import useJourneyStore, { POWERUPS } from '../../stores/useJourneyStore';
 import useGameStore from '../../stores/useGameStore';
@@ -31,7 +31,7 @@ function fireBossDefeatConfetti(color) {
   }, 400);
 }
 
-/* ─── Parallax Background ─── */
+/* ─── Parallax Background (CSS-only to avoid re-render overhead) ─── */
 function JourneyBackground({ multiplier, souls, active }) {
   const intensity = active ? Math.min((multiplier - 1) / 4, 1) : 0;
   const soulIntensity = Math.min(souls / 50, 1);
@@ -39,63 +39,39 @@ function JourneyBackground({ multiplier, souls, active }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Layer 1: slow-drift deep orbs */}
-      <motion.div
+      <div
         className="absolute w-[600px] h-[600px] rounded-full blur-3xl"
         style={{
           top: '10%', left: '-10%',
           background: `radial-gradient(circle, rgba(168,85,247,${0.03 + combined * 0.08}) 0%, transparent 70%)`,
+          animation: 'journey-drift-1 20s ease-in-out infinite',
         }}
-        animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
       />
-      <motion.div
+      <div
         className="absolute w-[500px] h-[500px] rounded-full blur-3xl"
         style={{
           bottom: '5%', right: '-5%',
           background: `radial-gradient(circle, rgba(139,92,246,${0.03 + combined * 0.06}) 0%, transparent 70%)`,
+          animation: 'journey-drift-2 18s ease-in-out infinite',
         }}
-        animate={{ x: [0, -25, 0], y: [0, -15, 0] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
       />
-
-      {/* Layer 2: heat-up overlay */}
       {active && intensity > 0 && (
-        <motion.div
+        <div
           className="absolute inset-0"
           style={{
             background: `radial-gradient(ellipse at center, rgba(168,85,247,${0.02 + intensity * 0.06}) 0%, rgba(124,58,237,${0.01 + intensity * 0.03}) 40%, transparent 70%)`,
+            animation: 'journey-pulse 1.5s ease-in-out infinite',
           }}
-          animate={{ opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
         />
       )}
-
-      {/* Layer 3: screen pulse at high multiplier */}
       {active && multiplier >= 3 && (
-        <motion.div
+        <div
           className="absolute inset-0"
           style={{
             background: `radial-gradient(ellipse at center, rgba(139,92,246,${0.04 + intensity * 0.06}) 0%, transparent 60%)`,
+            animation: 'journey-pulse 0.8s ease-in-out infinite',
           }}
-          animate={{ opacity: [0.3, 0.8, 0.3] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
         />
-      )}
-
-      {/* Layer 4: star particles */}
-      {active && (
-        <div className="absolute inset-0">
-          {Array.from({ length: Math.min(Math.floor(souls / 3) + 2, 15) }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 rounded-full bg-purple-400/40"
-              style={{ left: `${(i * 17 + 5) % 100}%`, top: `${(i * 23 + 10) % 90}%` }}
-              animate={{ opacity: [0, 0.6, 0], scale: [0.5, 1, 0.5] }}
-              transition={{ duration: 2 + (i % 3), repeat: Infinity, delay: i * 0.3 }}
-            />
-          ))}
-        </div>
       )}
     </div>
   );
@@ -108,11 +84,11 @@ function LivesDisplay({ lives, maxLives = 5 }) {
       <Heart size={16} className="text-red-400" />
       <div className="flex gap-1">
         {Array.from({ length: maxLives }).map((_, i) => (
-          <motion.div
+          <div
             key={i}
-            animate={i < lives ? { scale: [1, 1.15, 1] } : { scale: 1, opacity: 0.2 }}
-            transition={i < lives ? { duration: 1.2, repeat: Infinity, delay: i * 0.15 } : {}}
-            className={`w-3 h-3 rounded-full ${i < lives ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]' : 'bg-gray-700'}`}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              i < lives ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]' : 'bg-gray-700 opacity-20'
+            }`}
           />
         ))}
       </div>
@@ -124,53 +100,32 @@ function LivesDisplay({ lives, maxLives = 5 }) {
 /* ─── Souls Counter ─── */
 function SoulsCounter({ souls }) {
   return (
-    <motion.div className="flex items-center gap-1.5" layout>
+    <div className="flex items-center gap-1.5">
       <Ghost size={14} className="text-purple-400" />
-      <AnimatePresence mode="popLayout">
-        <motion.span
-          key={souls}
-          initial={{ y: -8, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 8, opacity: 0 }}
-          className="text-sm font-display tabular-nums text-purple-300"
-        >
-          {souls}
-        </motion.span>
-      </AnimatePresence>
+      <span className="text-sm font-display tabular-nums text-purple-300">{souls}</span>
       <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">souls</span>
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Multiplier Display ─── */
 function MultiplierHUD({ multiplier }) {
-  const isHigh = multiplier >= 4;
-  const intensity = Math.min((multiplier - 1) / 4, 1);
   const color = multiplier >= 5 ? '#c084fc' : multiplier >= 4 ? '#a855f7' : multiplier >= 3 ? '#8b5cf6' : multiplier >= 2 ? '#7c3aed' : '#9ca3af';
+  const intensity = Math.min((multiplier - 1) / 4, 1);
 
   return (
-    <motion.div
-      className="flex items-center gap-1.5"
-      animate={isHigh ? { scale: [1, 1.05, 1] } : {}}
-      transition={isHigh ? { duration: 0.4, repeat: Infinity } : {}}
-    >
+    <div className="flex items-center gap-1.5">
       <Zap size={14} style={{ color }} />
-      <AnimatePresence mode="popLayout">
-        <motion.span
-          key={multiplier}
-          initial={{ scale: 1.4, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          className="text-lg font-display tabular-nums"
-          style={{
-            color,
-            textShadow: `0 0 ${10 + intensity * 15}px ${color}`,
-          }}
-        >
-          {multiplier.toFixed(1)}×
-        </motion.span>
-      </AnimatePresence>
-    </motion.div>
+      <span
+        className="text-lg font-display tabular-nums transition-all duration-200"
+        style={{
+          color,
+          textShadow: `0 0 ${10 + intensity * 15}px ${color}`,
+        }}
+      >
+        {multiplier.toFixed(1)}×
+      </span>
+    </div>
   );
 }
 
@@ -183,17 +138,14 @@ function PowerUpIndicator({ powerUpId, endMs }) {
     if (!endMs) return;
     const tick = () => setRemaining(Math.max(0, endMs - Date.now()));
     tick();
-    const id = setInterval(tick, 100);
+    const id = setInterval(tick, 250);
     return () => clearInterval(id);
   }, [endMs]);
 
   if (!powerUp || remaining <= 0) return null;
 
   return (
-    <motion.div
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 20, opacity: 0 }}
+    <div
       className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
       style={{
         background: `${powerUp.color}15`,
@@ -205,16 +157,15 @@ function PowerUpIndicator({ powerUpId, endMs }) {
         {powerUp.name}
       </span>
       <span className="text-[10px] font-mono text-gray-400">
-        {(remaining / 1000).toFixed(1)}s
+        {(remaining / 1000).toFixed(0)}s
       </span>
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Floating Target ─── */
 function FloatingTarget({ target, onCollect }) {
   const [gone, setGone] = useState(false);
-  const timeLeft = Math.max(0, target.expiresAt - Date.now());
 
   const handleClick = () => {
     setGone(true);
@@ -224,24 +175,13 @@ function FloatingTarget({ target, onCollect }) {
   if (gone) return null;
 
   return (
-    <motion.button
+    <button
       onClick={handleClick}
-      initial={{ opacity: 0, scale: 0.5 }}
-      animate={{
-        opacity: [0.7, 1, 0.7],
-        scale: [0.95, 1.05, 0.95],
-        y: [0, -8, 0],
-      }}
-      exit={{ opacity: 0, scale: 0, rotate: 180 }}
-      transition={{
-        opacity: { duration: 2, repeat: Infinity },
-        scale: { duration: 3, repeat: Infinity },
-        y: { duration: 4, repeat: Infinity },
-      }}
       className="absolute z-30 flex flex-col items-center cursor-pointer group"
       style={{
         [target.side]: '4%',
         top: `${target.y}%`,
+        animation: 'journey-target-float 3s ease-in-out infinite',
       }}
     >
       <div
@@ -250,6 +190,7 @@ function FloatingTarget({ target, onCollect }) {
           background: `radial-gradient(circle, ${target.powerUp.color}30, ${target.powerUp.color}10)`,
           borderColor: `${target.powerUp.color}60`,
           boxShadow: `0 0 20px ${target.powerUp.color}40, 0 0 40px ${target.powerUp.color}20`,
+          animation: 'journey-target-glow 2s ease-in-out infinite',
         }}
       >
         <span className="text-2xl">{target.powerUp.emoji}</span>
@@ -257,16 +198,7 @@ function FloatingTarget({ target, onCollect }) {
       <span className="text-[9px] font-mono mt-1 opacity-60" style={{ color: target.powerUp.color }}>
         {target.powerUp.name}
       </span>
-      <div className="w-10 h-0.5 rounded-full mt-0.5 bg-gray-700 overflow-hidden">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: target.powerUp.color }}
-          initial={{ width: '100%' }}
-          animate={{ width: '0%' }}
-          transition={{ duration: timeLeft / 1000, ease: 'linear' }}
-        />
-      </div>
-    </motion.button>
+    </button>
   );
 }
 
@@ -276,124 +208,94 @@ function BossEncounter({ boss, progress, defeated }) {
   const pct = Math.min(progress / boss.requirement, 1);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key={boss.id}
-        initial={{ opacity: 0, scale: 0.8, y: -30 }}
-        animate={
-          defeated
-            ? { opacity: 0, scale: 0, rotate: 720, y: -200 }
-            : { opacity: 1, scale: 1, y: 0 }
-        }
-        exit={{ opacity: 0, scale: 0, rotate: 720, y: -200 }}
-        transition={defeated ? { duration: 1.2, ease: 'easeIn' } : { type: 'spring', stiffness: 200 }}
-        className="absolute top-[15%] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
+    <motion.div
+      key={boss.id}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={
+        defeated
+          ? { opacity: 0, scale: 0, rotate: 720, y: -200 }
+          : { opacity: 1, scale: 1, y: 0 }
+      }
+      transition={defeated ? { duration: 1.2, ease: 'easeIn' } : { duration: 0.4 }}
+      className="absolute top-[15%] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
+    >
+      <div
+        className="relative"
+        style={{ animation: 'journey-boss-float 3s ease-in-out infinite' }}
       >
-        <motion.div
-          animate={{ y: [0, -6, 0], rotate: [-2, 2, -2] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className="relative"
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center border-2"
+          style={{
+            background: boss.bgColor,
+            borderColor: boss.borderColor,
+            boxShadow: `0 0 30px ${boss.borderColor}, 0 0 60px ${boss.bgColor}`,
+          }}
         >
-          <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center border-2"
-            style={{
-              background: boss.bgColor,
-              borderColor: boss.borderColor,
-              boxShadow: `0 0 30px ${boss.borderColor}, 0 0 60px ${boss.bgColor}`,
-            }}
-          >
-            <span className="text-4xl">{boss.emoji}</span>
-          </div>
-          {defeated && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: [1, 1.5, 0] }}
-              transition={{ duration: 0.8 }}
-              className="absolute inset-0 rounded-2xl"
-              style={{ boxShadow: `0 0 60px ${boss.color}, 0 0 120px ${boss.color}` }}
+          <span className="text-4xl">{boss.emoji}</span>
+        </div>
+      </div>
+
+      <span className="text-xs font-display uppercase tracking-wider mt-2" style={{ color: boss.color }}>
+        {boss.name}
+      </span>
+
+      {!defeated && (
+        <>
+          <span className="text-[10px] font-mono text-gray-400 mt-1">{boss.objectiveDesc}</span>
+          <div className="w-32 h-1.5 rounded-full mt-1.5 bg-gray-800 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{ background: boss.color, width: `${pct * 100}%` }}
             />
-          )}
-        </motion.div>
-
-        <span className="text-xs font-display uppercase tracking-wider mt-2" style={{ color: boss.color }}>
-          {boss.name}
-        </span>
-
-        {!defeated && (
-          <>
-            <span className="text-[10px] font-mono text-gray-400 mt-1">{boss.objectiveDesc}</span>
-            <div className="w-32 h-1.5 rounded-full mt-1.5 bg-gray-800 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: boss.color }}
-                animate={{ width: `${pct * 100}%` }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              />
-            </div>
-            <span className="text-[9px] font-mono text-gray-500 mt-0.5">
-              {Math.min(Math.floor(progress), boss.requirement)}/{boss.requirement}
-            </span>
-          </>
-        )}
-      </motion.div>
-    </AnimatePresence>
+          </div>
+          <span className="text-[9px] font-mono text-gray-500 mt-0.5">
+            {Math.min(Math.floor(progress), boss.requirement)}/{boss.requirement}
+          </span>
+        </>
+      )}
+    </motion.div>
   );
 }
 
-/* ─── Journey Timer ─── */
-function JourneyTimer({ elapsedMs, multiplier, active }) {
+/* ─── Journey Timer (subscribes to elapsedMs independently to avoid re-rendering parent) ─── */
+function JourneyTimer({ multiplier, active }) {
+  const elapsedMs = useTimerStore(state => state.elapsedMs);
   const { minutes, seconds, centiseconds } = formatTime(elapsedMs);
   const intensity = Math.min((multiplier - 1) / 4, 1);
   const color = multiplier >= 4
     ? '#c084fc' : multiplier >= 3
       ? '#a855f7' : multiplier >= 2
         ? '#8b5cf6' : '#c4b5fd';
-  const glow = `0 0 ${15 + intensity * 25}px ${color}`;
 
   return (
-    <motion.div
-      className="select-none"
-      animate={
-        active && multiplier >= 4
-          ? { x: [0, -1, 1, -1, 1, 0] }
-          : {}
-      }
-      transition={multiplier >= 4 ? { duration: 0.15, repeat: Infinity } : {}}
-    >
+    <div className="select-none">
       <div
         className="flex items-baseline justify-center font-display tracking-tight transition-all duration-300"
         style={{
           fontSize: active && multiplier >= 3 ? 'clamp(4rem, 12vw, 10rem)' : 'clamp(3.5rem, 10vw, 8rem)',
           color,
-          textShadow: glow,
+          textShadow: `0 0 ${15 + intensity * 25}px ${color}`,
         }}
       >
         <span className="tabular-nums">{minutes}</span>
         <span className="mx-1 opacity-40">:</span>
         <span className="tabular-nums">{seconds}</span>
         <span className="mx-1 opacity-40">:</span>
-        <motion.span
-          className="tabular-nums"
-          animate={centiseconds === '00' && active ? { scale: [1, 1.15, 1] } : {}}
-          transition={{ duration: 0.2 }}
-        >
-          {centiseconds}
-        </motion.span>
+        <span className="tabular-nums">{centiseconds}</span>
       </div>
       {active && (
-        <motion.div
+        <div
           className="mx-auto h-1 rounded-full mt-2"
           style={{
             width: `${Math.min(multiplier / 5 * 100, 100)}%`,
             maxWidth: '200px',
             background: `linear-gradient(90deg, #7c3aed, ${color})`,
             boxShadow: multiplier >= 3 ? `0 0 10px ${color}` : 'none',
+            opacity: 0.75,
           }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 0.3, repeat: Infinity }}
         />
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -473,37 +375,24 @@ function DifficultySelect({ onSelect, onStart }) {
   );
 }
 
-/* ─── Shield Flash Overlay ─── */
+/* ─── Flash Overlays (CSS-only) ─── */
 function ShieldFlash({ show }) {
+  if (!show) return null;
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.3, 0] }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="absolute inset-0 z-40 pointer-events-none bg-blue-500/10 rounded-3xl"
-        />
-      )}
-    </AnimatePresence>
+    <div
+      className="absolute inset-0 z-40 pointer-events-none bg-blue-500/20 rounded-3xl"
+      style={{ animation: 'journey-flash 0.5s ease-out forwards' }}
+    />
   );
 }
 
-/* ─── Life Lost Flash ─── */
 function LifeLostFlash({ show }) {
+  if (!show) return null;
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.4, 0] }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
-          className="absolute inset-0 z-40 pointer-events-none bg-red-500/10 rounded-3xl"
-        />
-      )}
-    </AnimatePresence>
+    <div
+      className="absolute inset-0 z-40 pointer-events-none bg-red-500/20 rounded-3xl"
+      style={{ animation: 'journey-flash 0.4s ease-out forwards' }}
+    />
   );
 }
 
@@ -511,7 +400,7 @@ function LifeLostFlash({ show }) {
    MAIN JOURNEY MODE COMPONENT
    ═══════════════════════════════════════════ */
 export default function JourneyMode({ onSubmit }) {
-  const { startTimer, stopTimer, resetTimer, elapsedMs } = useTimerStore();
+  const { startTimer, stopTimer, resetTimer } = useTimerStore();
   const {
     lives, souls, difficulty, journeyActive, journeyEnded, currentMultiplier,
     lastHitElapsedMs, currentBoss, bossProgress, bossesDefeated,
@@ -758,11 +647,8 @@ export default function JourneyMode({ onSubmit }) {
 
   // Active journey
   return (
-    <motion.div
+    <div
       className="relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm bg-purple-950/10 border-purple-500/10 min-h-[500px] overflow-hidden"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
       style={
         journeyActive && currentMultiplier >= 3
           ? { animation: 'journey-glow 1.5s ease-in-out infinite' }
@@ -788,19 +674,13 @@ export default function JourneyMode({ onSubmit }) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <MultiplierHUD multiplier={currentMultiplier} />
-          <AnimatePresence>
-            {activePowerUp && (
-              <PowerUpIndicator powerUpId={activePowerUp} endMs={powerUpEndMs} />
-            )}
-          </AnimatePresence>
+          {activePowerUp && (
+            <PowerUpIndicator powerUpId={activePowerUp} endMs={powerUpEndMs} />
+          )}
           {shieldActive && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center gap-1 text-xs font-mono text-blue-400"
-            >
+            <div className="flex items-center gap-1 text-xs font-mono text-blue-400">
               <Shield size={12} /> Shield Active
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
@@ -809,26 +689,19 @@ export default function JourneyMode({ onSubmit }) {
       <BossEncounter boss={currentBoss} progress={bossProgress} defeated={bossDefeatedAnimation} />
 
       {/* Floating Targets */}
-      <AnimatePresence>
-        {floatingTargets.map(t => (
-          <FloatingTarget key={t.id} target={t} onCollect={handleCollectTarget} />
-        ))}
-      </AnimatePresence>
+      {floatingTargets.map(t => (
+        <FloatingTarget key={t.id} target={t} onCollect={handleCollectTarget} />
+      ))}
 
       {/* Center: Timer + Message + Controls */}
       <div className="relative z-10 flex flex-col items-center justify-center mt-8">
         <JourneyTimer
-          elapsedMs={elapsedMs}
           multiplier={currentMultiplier}
           active={journeyActive}
         />
 
         {journeyActive && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm font-mono tracking-wide mt-3 text-purple-300/70"
-          >
+          <p className="text-sm font-mono tracking-wide mt-3 text-purple-300/70">
             {currentMultiplier >= 4
               ? 'COSMIC POWER! Keep going! ✨'
               : currentMultiplier >= 3
@@ -836,27 +709,20 @@ export default function JourneyMode({ onSubmit }) {
                 : currentMultiplier >= 2
                   ? 'Building momentum... 🔮'
                   : 'Hit when centiseconds reach :00!'}
-          </motion.p>
+          </p>
         )}
 
         {/* HIT Button */}
         {journeyActive && (
-          <motion.div
-            className="mt-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          <div className="mt-8">
+            <button
               onClick={handleHit}
-              className="flex items-center gap-2 px-8 py-4 text-base rounded-2xl border font-mono uppercase tracking-wider text-purple-300 bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] transition-all"
+              className="flex items-center gap-2 px-8 py-4 text-base rounded-2xl border font-mono uppercase tracking-wider text-purple-300 bg-purple-500/20 border-purple-500/50 hover:bg-purple-500/30 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:scale-105 active:scale-95 transition-all"
             >
               <Zap size={22} />
               HIT!
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         )}
       </div>
 
@@ -879,6 +745,6 @@ export default function JourneyMode({ onSubmit }) {
           <span className="text-lg font-display tabular-nums text-purple-300">{bossesDefeated}</span>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
