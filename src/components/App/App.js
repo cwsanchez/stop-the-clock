@@ -24,6 +24,7 @@ import useJourneyStore from '../../stores/useJourneyStore';
 import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
+import { supabase } from '../../lib/supabaseClient';
 
 function GameMessage() {
   const { phase } = useTimerStore();
@@ -138,6 +139,22 @@ export default function App() {
       setPersonalBest(0);
     }
   }, [user, mode, fetchUserScores, setPersonalBest]);
+
+  // Keep-alive: ping Supabase every 60 s while the tab is visible to prevent
+  // the connection from going stale and freezing the leaderboard / auth state.
+  useEffect(() => {
+    let keepAliveId = null;
+
+    const ping = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession();
+      }
+    };
+
+    keepAliveId = setInterval(ping, 60_000);
+
+    return () => clearInterval(keepAliveId);
+  }, []);
 
   useEffect(() => {
     if (!feverRunActive) {
