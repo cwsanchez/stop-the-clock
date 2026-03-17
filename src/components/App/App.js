@@ -103,7 +103,7 @@ export default function App() {
     startFeverRun, feverHit, feverResetMultiplier, endFeverRun, resetFever,
   } = useGameStore();
   const { submitScore, fetchAllLeaderboards, fetchUserScores, setActiveLeaderboardTab } = useLeaderboardStore();
-  const { user, initialize } = useAuthStore();
+  const { user, profile, initialize } = useAuthStore();
   const { reset: resetTimerLoop } = useTimer();
   const {
     playSuccess, playFail, playNewBest,
@@ -127,14 +127,14 @@ export default function App() {
   }, [fetchAllLeaderboards]);
 
   useEffect(() => {
-    if (user) {
-      fetchUserScores(user.id, mode).then(({ highScore }) => {
+    if (user && profile?.display_name) {
+      fetchUserScores(profile.display_name, mode).then(({ highScore }) => {
         setPersonalBest(highScore);
       });
     } else {
       setPersonalBest(0);
     }
-  }, [user, mode, fetchUserScores, setPersonalBest]);
+  }, [user, profile, mode, fetchUserScores, setPersonalBest]);
 
   useEffect(() => {
     if (!feverRunActive) {
@@ -318,13 +318,17 @@ export default function App() {
 
     setActiveLeaderboardTab(mode);
 
+    if (profile?.display_name) {
+      const { highScore } = await fetchUserScores(profile.display_name, mode);
+      setPersonalBest(highScore);
+    }
+
     const isNew = result?.isNewHigh ?? result;
     if (isNew) {
       fireConfetti();
       playNewBest();
-      setPersonalBest(score);
     }
-  }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest, setActiveLeaderboardTab]);
+  }, [user, score, mode, profile, submitScore, fetchUserScores, fireConfetti, playNewBest, setPersonalBest, setActiveLeaderboardTab]);
 
   const handleChallengeCancel = useCallback(() => {
     setShowChallenge(false);

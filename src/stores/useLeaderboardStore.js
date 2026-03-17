@@ -13,6 +13,9 @@ const useLeaderboardStore = create((set, get) => ({
 
   setActiveLeaderboardTab: (tab) => set({ activeLeaderboardTab: tab }),
 
+  clearLeaderboards: () =>
+    set({ classicLeaderboard: [], weenieLeaderboard: [], feverLeaderboard: [] }),
+
   fetchLeaderboard: async (mode) => {
     set({ loading: true });
 
@@ -123,16 +126,17 @@ const useLeaderboardStore = create((set, get) => ({
       isNewHigh = true;
     }
 
+    get().clearLeaderboards();
     await get().fetchAllLeaderboards();
     return { rateLimited: false, isNewHigh };
   },
 
-  fetchUserScores: async (userId, mode) => {
-    if (!userId) return { highScore: 0, bestStreak: 0 };
+  fetchUserScores: async (displayName, mode) => {
+    if (!displayName) return { highScore: 0, bestStreak: 0 };
     const { data } = await supabase
-      .from('scores')
+      .from('leaderboard_hourly')
       .select('high_score, best_streak')
-      .eq('user_id', userId)
+      .eq('display_name', displayName)
       .eq('mode', mode)
       .maybeSingle();
 
