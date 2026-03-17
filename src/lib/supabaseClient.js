@@ -7,13 +7,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing REACT_APP_SUPABASE_URL or REACT_APP_SUPABASE_ANON_KEY');
 }
 
-const isDev = process.env.NODE_ENV === 'development';
+const isProd = process.env.NODE_ENV === 'production';
 
-export let supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: true,
+    persistSession: true,
+    lock: async (_name, _acquireTimeout, fn) => fn(),
+  },
+});
 
+/**
+ * Lightweight reconnect: tears down realtime channels and refreshes the
+ * auth session without creating a new GoTrueClient.
+ */
 export function forceReconnect() {
   try { supabase.removeAllChannels(); } catch (_) { /* best-effort */ }
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-  if (isDev) console.log('🔄 Supabase client recreated');
-  return supabase;
+  supabase.auth.refreshSession().catch(() => {});
+  if (!isProd) console.log('🔄 Supabase channels reset + session refreshed');
 }
