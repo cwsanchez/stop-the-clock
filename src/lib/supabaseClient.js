@@ -9,20 +9,38 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const isProd = process.env.NODE_ENV === 'production';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    detectSessionInUrl: true,
-    persistSession: true,
-    lock: async (_name, _acquireTimeout, fn) => fn(),
-  },
-});
+let _instance = null;
+
+function getClient() {
+  if (!_instance) {
+    _instance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        detectSessionInUrl: true,
+        persistSession: true,
+        lock: async (_name, _acquireTimeout, fn) => fn(),
+      },
+    });
+  }
+  return _instance;
+}
+
+export const supabase = getClient();
+
+let _reconnecting = false;
 
 /**
  * Lightweight reconnect: tears down realtime channels and refreshes the
- * auth session without creating a new GoTrueClient.
+ * auth session without creating a new GoTrueClient.  Debounced so rapid
+ * calls don't stack up.
  */
 export function forceReconnect() {
+  if (_reconnecting) return;
+  _reconnecting = true;
+
   try { supabase.removeAllChannels(); } catch (_) { /* best-effort */ }
   supabase.auth.refreshSession().catch(() => {});
-  if (!isProd) console.log('🔄 Supabase channels reset + session refreshed');
+
+  if (!isProd) console.log('Supabase channels reset + session refreshed');
+
+  setTimeout(() => { _reconnecting = false; }, 2_000);
 }

@@ -3,6 +3,8 @@ import { supabase, forceReconnect } from '../lib/supabaseClient';
 
 const RATE_LIMIT_MS = 5000;
 const FETCH_TIMEOUT_MS = 5_000;
+const RETRY_MAX = 2;
+const RETRY_BACKOFF_MS = 2_000;
 
 function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
   let timeoutId;
@@ -12,6 +14,24 @@ function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
   return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() =>
     clearTimeout(timeoutId),
   );
+}
+
+async function withRetry(queryFn) {
+  for (let attempt = 1; attempt <= RETRY_MAX; attempt++) {
+    try {
+      const result = await withTimeout(queryFn());
+      if (result.error) throw result.error;
+      return result;
+    } catch (err) {
+      if (attempt < RETRY_MAX) {
+        forceReconnect();
+        await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
+      } else {
+        console.error('Supabase fetch failed after retries:', err);
+        return { data: null, error: err };
+      }
+    }
+  }
 }
 
 const useLeaderboardStore = create((set, get) => ({
@@ -39,29 +59,11 @@ const useLeaderboardStore = create((set, get) => ({
         .order('high_score', { ascending: false })
         .limit(50);
 
-    let data, error;
+    const { data, error } = await withRetry(doQuery);
 
-    try {
-      const result = await withTimeout(doQuery());
-      data = result.data;
-      error = result.error;
-      if (error) throw error;
-    } catch (err) {
-      forceReconnect();
-      try {
-        const retryResult = await withTimeout(doQuery());
-        data = retryResult.data;
-        error = retryResult.error;
-        if (error) {
-          console.error('Leaderboard fetch failed after retry:', error);
-          set({ loading: false });
-          return [];
-        }
-      } catch (retryErr) {
-        console.error('Leaderboard fetch failed after retry:', retryErr);
-        set({ loading: false });
-        return [];
-      }
+    if (error || !data) {
+      set({ loading: false });
+      return [];
     }
 
     const entries = (data || []).map((row) => ({
@@ -126,34 +128,24 @@ const useLeaderboardStore = create((set, get) => ({
     }
 
     const submitTs = new Date().toISOString();
-    let isNewHigh;
 
-    if (existing) {
-      const newHighScore = Math.max(existing.high_score, score);
-      const newBestStreak = Math.max(existing.best_streak, streak);
-      isNewHigh = newHighScore > existing.high_score;
-      await supabase
-        .from('scores')
-        .update({
+    const newHighScore = existing ? Math.max(existing.high_score, score) : score;
+    const newBestStreak = existing ? Math.max(existing.best_streak, streak) : streak;
+    const isNewHigh = existing ? newHighScore > existing.high_score : true;
+
+    await supabase
+      .from('scores')
+      .upsert(
+        {
+          user_id: userId,
+          mode,
           high_score: newHighScore,
           best_streak: newBestStreak,
           updated_at: submitTs,
           last_submit: submitTs,
-        })
-        .eq('user_id', userId)
-        .eq('mode', mode);
-    } else {
-      await supabase
-        .from('scores')
-        .insert({
-          user_id: userId,
-          mode,
-          high_score: score,
-          best_streak: streak,
-          last_submit: submitTs,
-        });
-      isNewHigh = true;
-    }
+        },
+        { onConflict: 'user_id,mode' },
+      );
 
     get().clearLeaderboards();
     await get().fetchAllLeaderboards();
@@ -162,18 +154,22 @@ const useLeaderboardStore = create((set, get) => ({
 
   fetchUserScores: async (userId, mode) => {
     if (!userId) return { highScore: 0, bestStreak: 0 };
-    const { data } = await supabase
-      .from('leaderboard_hourly')
-      .select('high_score, best_streak')
-      .eq('user_id', userId)
-      .eq('mode', mode)
-      .maybeSingle();
 
-    return data ? { highScore: data.high_score, bestStreak: data.best_streak } : { highScore: 0, bestStreak: 0 };
+    const doQuery = () =>
+      supabase
+        .from('leaderboard_hourly')
+        .select('high_score, best_streak')
+        .eq('user_id', userId)
+        .eq('mode', mode)
+        .maybeSingle();
+
+    const { data, error } = await withRetry(doQuery);
+
+    if (error || !data) return { highScore: 0, bestStreak: 0 };
+    return { highScore: data.high_score, bestStreak: data.best_streak };
   },
 }));
 
-// refetchInterval: re-fetch all leaderboards every 30 seconds to prevent stale data
 setInterval(() => {
   useLeaderboardStore.getState().fetchAllLeaderboards();
 }, 30_000);
