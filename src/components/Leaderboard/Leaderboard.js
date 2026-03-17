@@ -54,7 +54,7 @@ const TABS = [
   { key: 'journey', label: 'Epic Journeys', icon: Swords, activeClass: 'bg-purple-500/10 text-purple-400 border border-purple-500/20' },
 ];
 
-export default function Leaderboard() {
+export default function Leaderboard({ iconsOnly = false }) {
   const {
     classicLeaderboard, weenieLeaderboard, feverLeaderboard, journeyLeaderboard,
     fetchLeaderboard, fetchAllLeaderboards, loading,
@@ -118,9 +118,13 @@ export default function Leaderboard() {
               activeLeaderboardTab === key ? activeClass : 'text-gray-500 hover:text-gray-300'
             }`}
           >
-            <Icon size={12} className="flex-shrink-0" />
-            <span className="hidden sm:inline truncate">{label}</span>
-            <span className="sm:hidden truncate">{key === 'journey' ? 'Journey' : key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
+            <Icon size={iconsOnly ? 14 : 12} className="flex-shrink-0" />
+            {!iconsOnly && (
+              <>
+                <span className="hidden sm:inline truncate">{label}</span>
+                <span className="sm:hidden truncate">{key === 'journey' ? 'Journey' : key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
+              </>
+            )}
           </button>
         ))}
       </div>
