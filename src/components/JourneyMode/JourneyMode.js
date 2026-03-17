@@ -6,7 +6,7 @@ import useTimerStore from '../../stores/useTimerStore';
 import useJourneyStore, { POWERUPS } from '../../stores/useJourneyStore';
 import useGameStore from '../../stores/useGameStore';
 import useAuthStore from '../../stores/useAuthStore';
-import useTimer from '../../hooks/useTimer';
+// useTimer is managed by App.js — resetTimerLoop passed as prop
 import useSound from '../../hooks/useSound';
 import { formatTime } from '../../utils/formatTime';
 import JourneyEndScreen from './JourneyEndScreen';
@@ -399,7 +399,7 @@ function LifeLostFlash({ show }) {
 /* ═══════════════════════════════════════════
    MAIN JOURNEY MODE COMPONENT
    ═══════════════════════════════════════════ */
-export default function JourneyMode({ onSubmit }) {
+export default function JourneyMode({ onSubmit, resetTimerLoop }) {
   const { startTimer, stopTimer, resetTimer } = useTimerStore();
   const {
     lives, souls, difficulty, journeyActive, journeyEnded, currentMultiplier,
@@ -412,7 +412,6 @@ export default function JourneyMode({ onSubmit }) {
     resetJourney,
   } = useJourneyStore();
   const { user } = useAuthStore();
-  const { reset: resetTimerLoop } = useTimer();
   const {
     playFeverHit, playFeverPerfect, playMultiplierChime, playFeverEnd,
     playLifeLost, playBossDefeat, playPowerUp, playShieldBreak,

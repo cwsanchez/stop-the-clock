@@ -42,6 +42,7 @@ export default function ModeSwitcher() {
     if (disabled || newMode === mode) return;
     if (mode === 'journey') {
       useJourneyStore.getState().resetJourney();
+      useTimerStore.getState().resetTimer();
     }
     setMode(newMode);
   };

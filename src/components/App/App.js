@@ -406,7 +406,7 @@ export default function App() {
         {isJourney ? (
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center">
-              <JourneyMode onSubmit={handleSubmit} />
+              <JourneyMode onSubmit={handleSubmit} resetTimerLoop={resetTimerLoop} />
               <div className="w-full mt-6">
                 <Leaderboard />
               </div>
