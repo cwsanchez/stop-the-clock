@@ -1,10 +1,27 @@
 import { create } from 'zustand';
 import { supabase, forceReconnect } from '../lib/supabaseClient';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const RATE_LIMIT_MS = 5000;
-const FETCH_TIMEOUT_MS = 5_000;
+const FETCH_TIMEOUT_MS = 8_000;
 const RETRY_MAX = 2;
-const RETRY_BACKOFF_MS = 2_000;
+const RETRY_BACKOFF_MS = 1_000;
+
+function isNetworkOrTimeout(err) {
+  if (!err) return false;
+  const msg = String(err.message || err).toLowerCase();
+  return (
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
+    msg.includes('fetch') ||
+    msg.includes('network') ||
+    msg.includes('failed') ||
+    msg.includes('aborted') ||
+    msg.includes('econnrefused') ||
+    msg.includes('enotfound')
+  );
+}
 
 function withTimeout(promise, ms = FETCH_TIMEOUT_MS) {
   let timeoutId;
@@ -23,11 +40,11 @@ async function withRetry(queryFn) {
       if (result.error) throw result.error;
       return result;
     } catch (err) {
-      if (attempt < RETRY_MAX) {
+      if (attempt < RETRY_MAX && isNetworkOrTimeout(err)) {
         forceReconnect();
         await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
       } else {
-        console.error('Supabase fetch failed after retries:', err);
+        if (isDev) console.error('[leaderboard] fetch failed after retries:', err);
         return { data: null, error: err };
       }
     }
@@ -169,9 +186,5 @@ const useLeaderboardStore = create((set, get) => ({
     return { highScore: data.high_score, bestStreak: data.best_streak };
   },
 }));
-
-setInterval(() => {
-  useLeaderboardStore.getState().fetchAllLeaderboards();
-}, 30_000);
 
 export default useLeaderboardStore;
