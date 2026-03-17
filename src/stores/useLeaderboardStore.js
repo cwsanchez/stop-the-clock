@@ -21,8 +21,8 @@ const useLeaderboardStore = create((set, get) => ({
     set({ loading: true });
 
     const { data, error } = await supabase
-      .from('leaderboard_hourly')
-      .select('high_score, best_streak, updated_at, display_name, mode')
+      .from('scores')
+      .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
       .eq('mode', mode)
       .order('high_score', { ascending: false })
       .limit(50);
@@ -34,7 +34,7 @@ const useLeaderboardStore = create((set, get) => ({
     }
 
     const entries = (data || []).map((row) => ({
-      displayName: row.display_name || 'Anonymous',
+      displayName: row.profiles?.display_name || 'Anonymous',
       highScore: row.high_score,
       bestStreak: row.best_streak,
       updatedAt: row.updated_at,
@@ -69,7 +69,7 @@ const useLeaderboardStore = create((set, get) => ({
     ]);
   },
 
-  submitScore: async (userId, mode, score) => {
+  submitScore: async (userId, mode, score, bestStreak) => {
     const now = Date.now();
     const { lastSubmitTime } = get();
     if (now - lastSubmitTime < RATE_LIMIT_MS) {
@@ -77,6 +77,8 @@ const useLeaderboardStore = create((set, get) => ({
     }
 
     set({ lastSubmitTime: now });
+
+    const streak = bestStreak ?? score;
 
     const { data: existing } = await supabase
       .from('scores')
@@ -97,7 +99,7 @@ const useLeaderboardStore = create((set, get) => ({
 
     if (existing) {
       const newHighScore = Math.max(existing.high_score, score);
-      const newBestStreak = Math.max(existing.best_streak, score);
+      const newBestStreak = Math.max(existing.best_streak, streak);
       if (newHighScore > existing.high_score || newBestStreak > existing.best_streak) {
         await supabase
           .from('scores')
@@ -124,7 +126,7 @@ const useLeaderboardStore = create((set, get) => ({
           user_id: userId,
           mode,
           high_score: score,
-          best_streak: score,
+          best_streak: streak,
           last_submit: submitTs,
         });
       isNewHigh = true;
@@ -135,12 +137,12 @@ const useLeaderboardStore = create((set, get) => ({
     return { rateLimited: false, isNewHigh };
   },
 
-  fetchUserScores: async (displayName, mode) => {
-    if (!displayName) return { highScore: 0, bestStreak: 0 };
+  fetchUserScores: async (userId, mode) => {
+    if (!userId) return { highScore: 0, bestStreak: 0 };
     const { data } = await supabase
-      .from('leaderboard_hourly')
+      .from('scores')
       .select('high_score, best_streak')
-      .eq('display_name', displayName)
+      .eq('user_id', userId)
       .eq('mode', mode)
       .maybeSingle();
 
