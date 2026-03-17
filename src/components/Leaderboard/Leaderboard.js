@@ -57,18 +57,13 @@ const TABS = [
 export default function Leaderboard({ iconsOnly = false }) {
   const {
     classicLeaderboard, weenieLeaderboard, feverLeaderboard, journeyLeaderboard,
-    fetchLeaderboard, fetchAllLeaderboards, loading,
+    loading,
     activeLeaderboardTab, setActiveLeaderboardTab,
   } = useLeaderboardStore();
   const { profile } = useAuthStore();
 
-  useEffect(() => {
-    fetchAllLeaderboards();
-  }, [fetchAllLeaderboards]);
-
   const handleTabChange = (newTab) => {
     setActiveLeaderboardTab(newTab);
-    fetchLeaderboard(newTab);
   };
 
   const leaderboardMap = {
