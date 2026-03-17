@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Timer as TimerIcon, Trophy, Flame } from 'lucide-react';
+import { Timer as TimerIcon, Trophy, Flame, Github } from 'lucide-react';
 
 import Timer from '../Timer/Timer';
 import Controls from '../Controls/Controls';
@@ -520,15 +520,26 @@ export default function App() {
           transition={{ delay: 0.5 }}
           className="text-center mt-12 text-xs text-gray-700 font-mono"
         >
-          Stop the Clock &mdash; {
-            mode === 'journey'
-              ? 'Journey Mode — survive, defeat bosses, collect souls'
-              : mode === 'fever'
-                ? 'Fever Mode — nonstop timer + multiplier madness'
-                : mode === 'weenie'
-                  ? 'Stop near :00 (±0.05s)'
-                  : 'Stop exactly on :00'
-          } to score
+          <div>
+            Stop the Clock &mdash; {
+              mode === 'journey'
+                ? 'Journey Mode — survive, defeat bosses, collect souls'
+                : mode === 'fever'
+                  ? 'Fever Mode — nonstop timer + multiplier madness'
+                  : mode === 'weenie'
+                    ? 'Stop near :00 (±0.05s)'
+                    : 'Stop exactly on :00'
+            } to score
+          </div>
+          <a
+            href="https://github.com/cwsanchez/stop-the-clock"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-purple-500/30 hover:text-purple-400/70 transition-colors"
+          >
+            <Github size={11} />
+            <span>View source</span>
+          </a>
         </motion.footer>
       </div>
 

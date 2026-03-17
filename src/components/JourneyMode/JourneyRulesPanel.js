@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Swords, X, Info, Github } from 'lucide-react';
+import { Swords, X, Info } from 'lucide-react';
 
 export default function JourneyRulesPanel() {
   const [expanded, setExpanded] = useState(false);
@@ -73,15 +73,6 @@ export default function JourneyRulesPanel() {
                 <span className="text-neon-green mt-0.5">🏆</span>
                 <span>Final score = (raw pts + boss bonus + soul bonus) × efficiency</span>
               </div>
-              <a
-                href="https://github.com/cwsanchez/stop-the-clock"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 pt-2 mt-1 border-t border-purple-500/10 text-purple-400/40 hover:text-neon-green/70 transition-colors"
-              >
-                <Github size={11} />
-                <span>View source on GitHub</span>
-              </a>
             </div>
           </motion.div>
         )}
