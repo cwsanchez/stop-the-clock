@@ -54,16 +54,19 @@ const TABS = [
 ];
 
 export default function Leaderboard() {
-  const { classicLeaderboard, weenieLeaderboard, feverLeaderboard, fetchLeaderboard, fetchAllLeaderboards, loading } = useLeaderboardStore();
+  const {
+    classicLeaderboard, weenieLeaderboard, feverLeaderboard,
+    fetchLeaderboard, fetchAllLeaderboards, loading,
+    activeLeaderboardTab, setActiveLeaderboardTab,
+  } = useLeaderboardStore();
   const { profile } = useAuthStore();
-  const [tab, setTab] = useState('classic');
 
   useEffect(() => {
     fetchAllLeaderboards();
   }, [fetchAllLeaderboards]);
 
   const handleTabChange = (newTab) => {
-    setTab(newTab);
+    setActiveLeaderboardTab(newTab);
     fetchLeaderboard(newTab);
   };
 
@@ -73,9 +76,9 @@ export default function Leaderboard() {
     fever: feverLeaderboard,
   };
 
-  const leaderboard = leaderboardMap[tab] || [];
-  const isFever = tab === 'fever';
-  const isWeenie = tab === 'weenie';
+  const leaderboard = leaderboardMap[activeLeaderboardTab] || [];
+  const isFever = activeLeaderboardTab === 'fever';
+  const isWeenie = activeLeaderboardTab === 'weenie';
 
   const getHighlightColor = () => {
     if (isFever) return { bg: 'bg-red-500/5 border border-red-500/10', text: 'text-red-400' };
@@ -108,7 +111,7 @@ export default function Leaderboard() {
             key={key}
             onClick={() => handleTabChange(key)}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] sm:text-xs font-mono uppercase tracking-wider transition-all ${
-              tab === key ? activeClass : 'text-gray-500 hover:text-gray-300'
+              activeLeaderboardTab === key ? activeClass : 'text-gray-500 hover:text-gray-300'
             }`}
           >
             <Icon size={12} />
