@@ -55,7 +55,8 @@ function GameMessage() {
   }
 
   if (isFever && feverEnded) {
-    return null;
+    // Reserve the same vertical space as the other fever messages so Controls never shifts
+    return <div className="mt-4 h-5" />;
   }
 
   const messages = {
