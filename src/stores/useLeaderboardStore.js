@@ -33,7 +33,7 @@ const useLeaderboardStore = create((set, get) => ({
 
     const doQuery = () =>
       supabase
-        .from('scores')
+        .from('leaderboard_hourly')
         .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
         .eq('mode', mode)
         .order('high_score', { ascending: false })
@@ -142,12 +142,6 @@ const useLeaderboardStore = create((set, get) => ({
           })
           .eq('user_id', userId)
           .eq('mode', mode);
-      } else {
-        await supabase
-          .from('scores')
-          .update({ last_submit: submitTs })
-          .eq('user_id', userId)
-          .eq('mode', mode);
       }
       isNewHigh = newHighScore > existing.high_score;
     } else {
@@ -171,7 +165,7 @@ const useLeaderboardStore = create((set, get) => ({
   fetchUserScores: async (userId, mode) => {
     if (!userId) return { highScore: 0, bestStreak: 0 };
     const { data } = await supabase
-      .from('scores')
+      .from('leaderboard_hourly')
       .select('high_score, best_streak')
       .eq('user_id', userId)
       .eq('mode', mode)
