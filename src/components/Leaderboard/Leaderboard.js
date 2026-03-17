@@ -114,13 +114,13 @@ export default function Leaderboard() {
           <button
             key={key}
             onClick={() => handleTabChange(key)}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] sm:text-xs font-mono uppercase tracking-wider transition-all ${
+            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] sm:text-xs font-mono uppercase tracking-wider transition-all overflow-hidden ${
               activeLeaderboardTab === key ? activeClass : 'text-gray-500 hover:text-gray-300'
             }`}
           >
-            <Icon size={12} />
-            <span className="hidden sm:inline">{label}</span>
-            <span className="sm:hidden">{key === 'journey' ? 'Journey' : key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
+            <Icon size={12} className="flex-shrink-0" />
+            <span className="hidden sm:inline truncate">{label}</span>
+            <span className="sm:hidden truncate">{key === 'journey' ? 'Journey' : key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
           </button>
         ))}
       </div>
@@ -151,12 +151,12 @@ export default function Leaderboard() {
                 >
                   <RankBadge rank={idx + 1} />
                   <span
-                    className={`flex-1 truncate ${isYou ? highlight.text : 'text-gray-300'}`}
+                    className={`flex-1 min-w-0 truncate ${isYou ? highlight.text : 'text-gray-300'}`}
                   >
                     {entry.displayName}
                     {isYou && <span className="text-[10px] ml-1 opacity-60">(you)</span>}
                   </span>
-                  <span className={`tabular-nums font-display text-base ${scoreColor}`}>
+                  <span className={`flex-shrink-0 tabular-nums font-display text-base ${scoreColor}`}>
                     {entry.highScore}
                   </span>
                 </motion.div>

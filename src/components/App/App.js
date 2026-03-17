@@ -20,6 +20,7 @@ import useTimerStore from '../../stores/useTimerStore';
 import useGameStore from '../../stores/useGameStore';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
+import useJourneyStore from '../../stores/useJourneyStore';
 import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
@@ -129,14 +130,14 @@ export default function App() {
   }, [fetchAllLeaderboards]);
 
   useEffect(() => {
-    if (user && profile?.display_name) {
-      fetchUserScores(profile.display_name, mode).then(({ highScore }) => {
+    if (user) {
+      fetchUserScores(user.id, mode).then(({ highScore }) => {
         setPersonalBest(highScore);
       });
     } else {
       setPersonalBest(0);
     }
-  }, [user, profile, mode, fetchUserScores, setPersonalBest]);
+  }, [user, mode, fetchUserScores, setPersonalBest]);
 
   useEffect(() => {
     if (!feverRunActive) {
@@ -310,7 +311,14 @@ export default function App() {
 
   const handleChallengeSuccess = useCallback(async () => {
     setShowChallenge(false);
-    const result = await submitScore(user.id, mode, score);
+
+    let bestStreak;
+    if (mode === 'journey') {
+      const jState = useJourneyStore.getState();
+      bestStreak = jState.bossesDefeated;
+    }
+
+    const result = await submitScore(user.id, mode, score, bestStreak);
 
     if (result?.rateLimited) {
       setRateLimitMsg('Wait 5s between submissions');
@@ -320,8 +328,8 @@ export default function App() {
 
     setActiveLeaderboardTab(mode);
 
-    if (profile?.display_name) {
-      const { highScore } = await fetchUserScores(profile.display_name, mode);
+    if (user) {
+      const { highScore } = await fetchUserScores(user.id, mode);
       setPersonalBest(highScore);
     }
 
@@ -330,7 +338,7 @@ export default function App() {
       fireConfetti();
       playNewBest();
     }
-  }, [user, score, mode, profile, submitScore, fetchUserScores, fireConfetti, playNewBest, setPersonalBest, setActiveLeaderboardTab]);
+  }, [user, score, mode, submitScore, fetchUserScores, fireConfetti, playNewBest, setPersonalBest, setActiveLeaderboardTab]);
 
   const handleChallengeCancel = useCallback(() => {
     setShowChallenge(false);
