@@ -1,20 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Swords, X, Info, BookOpen } from 'lucide-react';
-
-const JOURNEY_DOCS_URL =
-  'https://github.com/' +
-  (process.env.REACT_APP_GITHUB_REPO || '') +
-  '/blob/main/src/docs/JourneyMode.md';
-
-const JOURNEY_DOCS_FALLBACK = '/src/docs/JourneyMode.md';
+import { Swords, X, Info } from 'lucide-react';
 
 export default function JourneyRulesPanel() {
   const [expanded, setExpanded] = useState(false);
-
-  const docsHref = process.env.REACT_APP_GITHUB_REPO
-    ? JOURNEY_DOCS_URL
-    : JOURNEY_DOCS_FALLBACK;
 
   return (
     <div className="absolute top-3 right-3 z-20">
@@ -84,15 +73,6 @@ export default function JourneyRulesPanel() {
                 <span className="text-neon-green mt-0.5">🏆</span>
                 <span>Final score = (raw pts + boss bonus + soul bonus) × efficiency</span>
               </div>
-              <a
-                href={docsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 pt-2 mt-1 border-t border-purple-500/10 text-purple-400 hover:text-purple-300 transition-colors"
-              >
-                <BookOpen size={11} />
-                <span>Full Journey Mode deep-dive docs →</span>
-              </a>
             </div>
           </motion.div>
         )}
