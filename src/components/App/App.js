@@ -14,6 +14,7 @@ import ChallengeModal from '../ChallengeModal/ChallengeModal';
 import FeverParticles from '../FeverParticles/FeverParticles';
 import FeverRulesPanel from '../FeverRulesPanel/FeverRulesPanel';
 import FeverEndScreen from '../FeverEndScreen/FeverEndScreen';
+import JourneyMode from '../JourneyMode/JourneyMode';
 
 import useTimerStore from '../../stores/useTimerStore';
 import useGameStore from '../../stores/useGameStore';
@@ -117,6 +118,7 @@ export default function App() {
 
   const isFever = mode === 'fever';
   const isWeenie = mode === 'weenie';
+  const isJourney = mode === 'journey';
 
   useEffect(() => {
     initialize();
@@ -375,10 +377,10 @@ export default function App() {
         ) : (
           <>
             <div className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl transition-colors duration-1000 ${
-              isWeenie ? 'bg-amber-400/[0.03]' : isFever ? 'bg-red-500/[0.02]' : 'bg-neon-cyan/[0.02]'
+              isJourney ? 'bg-purple-500/[0.03]' : isWeenie ? 'bg-amber-400/[0.03]' : isFever ? 'bg-red-500/[0.02]' : 'bg-neon-cyan/[0.02]'
             }`} />
             <div className={`absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl transition-colors duration-1000 ${
-              isWeenie ? 'bg-orange-500/[0.03]' : isFever ? 'bg-orange-600/[0.02]' : 'bg-neon-pink/[0.02]'
+              isJourney ? 'bg-violet-600/[0.03]' : isWeenie ? 'bg-orange-500/[0.03]' : isFever ? 'bg-orange-600/[0.02]' : 'bg-neon-pink/[0.02]'
             }`} />
           </>
         )}
@@ -391,7 +393,7 @@ export default function App() {
           className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 sm:mb-8"
         >
           <div className="flex items-center gap-3">
-            <TimerIcon size={24} className={isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-cyan'} />
+            <TimerIcon size={24} className={isJourney ? 'text-purple-400' : isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-cyan'} />
             <h1 className="text-xl sm:text-2xl font-display uppercase tracking-[0.2em] text-white">
               Stop the Clock
             </h1>
@@ -401,70 +403,81 @@ export default function App() {
 
         <ModeSwitcher />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
-          <div className="flex flex-col items-center">
-            <motion.div
-              className={`relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm transition-all duration-500 ${
-                isFever
-                  ? feverRunActive
-                    ? 'bg-red-950/20 border-red-500/20'
-                    : 'bg-red-950/10 border-red-500/10'
-                  : isWeenie
-                    ? 'bg-amber-900/10 border-amber-400/10'
-                    : 'bg-dark-800/30 border-gray-800/50'
-              }`}
-              style={
-                isFever && feverRunActive && currentMultiplier >= 3
-                  ? { animation: 'fire-glow 1s ease-in-out infinite' }
-                  : {}
-              }
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {isFever && <FeverRulesPanel />}
+        {isJourney ? (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col items-center">
+              <JourneyMode onSubmit={handleSubmit} />
+              <div className="w-full mt-6">
+                <Leaderboard />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 lg:gap-8">
+            <div className="flex flex-col items-center">
+              <motion.div
+                className={`relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm transition-all duration-500 ${
+                  isFever
+                    ? feverRunActive
+                      ? 'bg-red-950/20 border-red-500/20'
+                      : 'bg-red-950/10 border-red-500/10'
+                    : isWeenie
+                      ? 'bg-amber-900/10 border-amber-400/10'
+                      : 'bg-dark-800/30 border-gray-800/50'
+                }`}
+                style={
+                  isFever && feverRunActive && currentMultiplier >= 3
+                    ? { animation: 'fire-glow 1s ease-in-out infinite' }
+                    : {}
+                }
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                {isFever && <FeverRulesPanel />}
 
-              <FeverParticles
-                multiplier={currentMultiplier}
-                active={feverRunActive}
-              />
+                <FeverParticles
+                  multiplier={currentMultiplier}
+                  active={feverRunActive}
+                />
 
-              <Timer />
-              <GameMessage />
+                <Timer />
+                <GameMessage />
 
-              <AnimatePresence>
-                {rateLimitMsg && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-xs text-red-400 font-mono text-center mt-2 bg-red-400/5 border border-red-400/10 rounded-lg py-2 px-3"
-                  >
-                    {rateLimitMsg}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+                <AnimatePresence>
+                  {rateLimitMsg && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="text-xs text-red-400 font-mono text-center mt-2 bg-red-400/5 border border-red-400/10 rounded-lg py-2 px-3"
+                    >
+                      {rateLimitMsg}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
 
-              <Controls
-                onStart={handleStart}
-                onStop={handleStop}
-                onChain={handleChain}
-                onSubmit={handleSubmit}
-                onReset={handleReset}
-                onFeverHit={handleFeverHit}
-              />
-              {feverEnded ? <FeverEndScreen /> : <ScoreDisplay />}
-            </motion.div>
+                <Controls
+                  onStart={handleStart}
+                  onStop={handleStop}
+                  onChain={handleChain}
+                  onSubmit={handleSubmit}
+                  onReset={handleReset}
+                  onFeverHit={handleFeverHit}
+                />
+                {feverEnded ? <FeverEndScreen /> : <ScoreDisplay />}
+              </motion.div>
 
-            <div className="w-full mt-6 lg:hidden">
+              <div className="w-full mt-6 lg:hidden">
+                <Leaderboard />
+              </div>
+            </div>
+
+            <div className="hidden lg:flex flex-col gap-6">
               <Leaderboard />
             </div>
           </div>
-
-          <div className="hidden lg:flex flex-col gap-6">
-            <Leaderboard />
-          </div>
-        </div>
+        )}
 
         <motion.footer
           initial={{ opacity: 0 }}
@@ -473,11 +486,13 @@ export default function App() {
           className="text-center mt-12 text-xs text-gray-700 font-mono"
         >
           Stop the Clock &mdash; {
-            mode === 'fever'
-              ? 'Fever Mode — nonstop timer + multiplier madness'
-              : mode === 'weenie'
-                ? 'Stop near :00 (±0.05s)'
-                : 'Stop exactly on :00'
+            mode === 'journey'
+              ? 'Journey Mode — survive, defeat bosses, collect souls'
+              : mode === 'fever'
+                ? 'Fever Mode — nonstop timer + multiplier madness'
+                : mode === 'weenie'
+                  ? 'Stop near :00 (±0.05s)'
+                  : 'Stop exactly on :00'
           } to score
         </motion.footer>
       </div>

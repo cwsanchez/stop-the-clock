@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Flame, Baby, Zap, Clock } from 'lucide-react';
+import { Trophy, Medal, Flame, Baby, Zap, Swords, Clock } from 'lucide-react';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
 
@@ -51,11 +51,12 @@ const TABS = [
   { key: 'classic', label: 'Classic', icon: Flame, activeClass: 'bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/20' },
   { key: 'weenie', label: 'Weenie Hut Jr', icon: Baby, activeClass: 'bg-amber-400/10 text-amber-400 border border-amber-400/20' },
   { key: 'fever', label: 'Fever Legends', icon: Zap, activeClass: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+  { key: 'journey', label: 'Epic Journeys', icon: Swords, activeClass: 'bg-purple-500/10 text-purple-400 border border-purple-500/20' },
 ];
 
 export default function Leaderboard() {
   const {
-    classicLeaderboard, weenieLeaderboard, feverLeaderboard,
+    classicLeaderboard, weenieLeaderboard, feverLeaderboard, journeyLeaderboard,
     fetchLeaderboard, fetchAllLeaderboards, loading,
     activeLeaderboardTab, setActiveLeaderboardTab,
   } = useLeaderboardStore();
@@ -74,25 +75,28 @@ export default function Leaderboard() {
     classic: classicLeaderboard,
     weenie: weenieLeaderboard,
     fever: feverLeaderboard,
+    journey: journeyLeaderboard,
   };
 
   const leaderboard = leaderboardMap[activeLeaderboardTab] || [];
   const isFever = activeLeaderboardTab === 'fever';
   const isWeenie = activeLeaderboardTab === 'weenie';
+  const isJourney = activeLeaderboardTab === 'journey';
 
   const getHighlightColor = () => {
+    if (isJourney) return { bg: 'bg-purple-500/5 border border-purple-500/10', text: 'text-purple-400' };
     if (isFever) return { bg: 'bg-red-500/5 border border-red-500/10', text: 'text-red-400' };
     if (isWeenie) return { bg: 'bg-amber-400/5 border border-amber-400/10', text: 'text-amber-400' };
     return { bg: 'bg-neon-cyan/5 border border-neon-cyan/10', text: 'text-neon-cyan' };
   };
 
-  const scoreColor = isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-green';
+  const scoreColor = isJourney ? 'text-purple-400' : isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-green';
   const highlight = getHighlightColor();
 
   return (
     <div className="bg-dark-800/50 border border-gray-800 rounded-2xl p-4 sm:p-5">
       <div className="flex items-center gap-2 mb-1">
-        <Trophy size={18} className={isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-yellow'} />
+        <Trophy size={18} className={isJourney ? 'text-purple-400' : isFever ? 'text-red-400' : isWeenie ? 'text-amber-400' : 'text-neon-yellow'} />
         <h2 className="text-sm font-display uppercase tracking-widest text-gray-300">
           Leaderboard
         </h2>
@@ -116,7 +120,7 @@ export default function Leaderboard() {
           >
             <Icon size={12} />
             <span className="hidden sm:inline">{label}</span>
-            <span className="sm:hidden">{key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
+            <span className="sm:hidden">{key === 'journey' ? 'Journey' : key === 'fever' ? 'Fever' : key === 'weenie' ? 'Weenie' : 'Classic'}</span>
           </button>
         ))}
       </div>

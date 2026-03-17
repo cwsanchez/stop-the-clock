@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 const useGameStore = create((set, get) => ({
-  mode: 'classic', // 'classic' | 'weenie' | 'fever'
+  mode: 'classic', // 'classic' | 'weenie' | 'fever' | 'journey'
   score: 0,
   personalBest: 0,
   bestStreak: 0,

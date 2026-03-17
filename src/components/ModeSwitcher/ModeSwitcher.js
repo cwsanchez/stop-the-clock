@@ -1,13 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Baby, Zap } from 'lucide-react';
+import { Flame, Baby, Zap, Swords } from 'lucide-react';
 import useGameStore from '../../stores/useGameStore';
 import useTimerStore from '../../stores/useTimerStore';
+import useJourneyStore from '../../stores/useJourneyStore';
 
 const MODES = [
   { key: 'classic', label: 'Classic', icon: Flame, color: 'text-neon-cyan' },
   { key: 'weenie', label: 'Weenie Hut Jr', icon: Baby, color: 'text-amber-400' },
   { key: 'fever', label: 'Fever', icon: Zap, color: 'text-red-400' },
+  { key: 'journey', label: 'Journey', icon: Swords, color: 'text-purple-400' },
 ];
 
 function getModeIndex(mode) {
@@ -20,11 +22,12 @@ function getSliderStyle(mode) {
     classic: 'bg-neon-cyan/10 border border-neon-cyan/20',
     weenie: 'bg-amber-400/10 border border-amber-400/20',
     fever: 'bg-red-500/10 border border-red-500/20',
+    journey: 'bg-purple-500/10 border border-purple-500/20',
   };
   return {
     className: `absolute top-1 bottom-1 rounded-xl transition-colors duration-300 ${bgColors[mode]}`,
     x: `${idx * 100}%`,
-    width: 'calc(33.333% - 3px)',
+    width: 'calc(25% - 3px)',
     left: '4px',
   };
 }
@@ -32,10 +35,14 @@ function getSliderStyle(mode) {
 export default function ModeSwitcher() {
   const { mode, setMode, feverRunActive } = useGameStore();
   const { phase } = useTimerStore();
-  const disabled = phase === 'running' || feverRunActive;
+  const { journeyActive } = useJourneyStore();
+  const disabled = phase === 'running' || feverRunActive || journeyActive;
 
   const handleSwitch = (newMode) => {
     if (disabled || newMode === mode) return;
+    if (mode === 'journey') {
+      useJourneyStore.getState().resetJourney();
+    }
     setMode(newMode);
   };
 
@@ -63,7 +70,7 @@ export default function ModeSwitcher() {
             key={key}
             onClick={() => handleSwitch(key)}
             disabled={disabled}
-            className={`relative z-10 flex flex-1 sm:min-w-[11rem] justify-center items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
+            className={`relative z-10 flex flex-1 sm:min-w-[8rem] justify-center items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl font-mono text-sm uppercase tracking-wider transition-all duration-300 disabled:cursor-not-allowed ${
               mode === key ? color : 'text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -90,6 +97,16 @@ export default function ModeSwitcher() {
           className="text-xs font-mono text-red-400/70"
         >
           Nonstop timer — keep hitting to build your multiplier! 🔥
+        </motion.p>
+      )}
+
+      {mode === 'journey' && (
+        <motion.p
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs font-mono text-purple-400/70"
+        >
+          5 lives — defeat bosses, collect souls, survive the journey! ⚔️
         </motion.p>
       )}
     </motion.div>

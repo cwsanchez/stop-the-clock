@@ -81,3 +81,12 @@
     box-shadow: 0 0 40px rgba(255, 68, 0, 0.5), 0 0 80px rgba(255, 0, 68, 0.25), 0 0 120px rgba(255, 140, 0, 0.1);
   }
 }
+
+@keyframes journey-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.25), 0 0 60px rgba(139, 92, 246, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.4), 0 0 80px rgba(139, 92, 246, 0.2), 0 0 120px rgba(124, 58, 237, 0.1);
+  }
+}

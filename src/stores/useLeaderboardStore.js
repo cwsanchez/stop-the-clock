@@ -7,6 +7,7 @@ const useLeaderboardStore = create((set, get) => ({
   classicLeaderboard: [],
   weenieLeaderboard: [],
   feverLeaderboard: [],
+  journeyLeaderboard: [],
   loading: false,
   lastSubmitTime: 0,
   activeLeaderboardTab: 'classic',
@@ -14,7 +15,7 @@ const useLeaderboardStore = create((set, get) => ({
   setActiveLeaderboardTab: (tab) => set({ activeLeaderboardTab: tab }),
 
   clearLeaderboards: () =>
-    set({ classicLeaderboard: [], weenieLeaderboard: [], feverLeaderboard: [] }),
+    set({ classicLeaderboard: [], weenieLeaderboard: [], feverLeaderboard: [], journeyLeaderboard: [] }),
 
   fetchLeaderboard: async (mode) => {
     set({ loading: true });
@@ -45,6 +46,8 @@ const useLeaderboardStore = create((set, get) => ({
       set({ weenieLeaderboard: entries, loading: false });
     } else if (mode === 'fever') {
       set({ feverLeaderboard: entries, loading: false });
+    } else if (mode === 'journey') {
+      set({ journeyLeaderboard: entries, loading: false });
     }
 
     return data || [];
@@ -62,6 +65,7 @@ const useLeaderboardStore = create((set, get) => ({
       get().fetchLeaderboard('classic'),
       get().fetchLeaderboard('weenie'),
       get().fetchLeaderboard('fever'),
+      get().fetchLeaderboard('journey'),
     ]);
   },
 
