@@ -9,13 +9,16 @@ const useLeaderboardStore = create((set, get) => ({
   feverLeaderboard: [],
   loading: false,
   lastSubmitTime: 0,
+  activeLeaderboardTab: 'classic',
+
+  setActiveLeaderboardTab: (tab) => set({ activeLeaderboardTab: tab }),
 
   fetchLeaderboard: async (mode) => {
     set({ loading: true });
 
     const { data, error } = await supabase
       .from('leaderboard_hourly')
-      .select('high_score, best_streak, updated_at, display_name')
+      .select('high_score, best_streak, updated_at, display_name, mode')
       .eq('mode', mode)
       .order('high_score', { ascending: false })
       .limit(50);

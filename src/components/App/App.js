@@ -102,7 +102,7 @@ export default function App() {
     feverRunActive, feverEnded, currentMultiplier, lastHitElapsedMs,
     startFeverRun, feverHit, feverResetMultiplier, endFeverRun, resetFever,
   } = useGameStore();
-  const { submitScore, fetchAllLeaderboards, fetchUserScores } = useLeaderboardStore();
+  const { submitScore, fetchAllLeaderboards, fetchUserScores, setActiveLeaderboardTab } = useLeaderboardStore();
   const { user, initialize } = useAuthStore();
   const { reset: resetTimerLoop } = useTimer();
   const {
@@ -316,13 +316,15 @@ export default function App() {
       return;
     }
 
+    setActiveLeaderboardTab(mode);
+
     const isNew = result?.isNewHigh ?? result;
     if (isNew) {
       fireConfetti();
       playNewBest();
       setPersonalBest(score);
     }
-  }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest]);
+  }, [user, score, mode, submitScore, fireConfetti, playNewBest, setPersonalBest, setActiveLeaderboardTab]);
 
   const handleChallengeCancel = useCallback(() => {
     setShowChallenge(false);
