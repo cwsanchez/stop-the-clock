@@ -112,7 +112,7 @@ const useLeaderboardStore = create((set, get) => ({
     const streak = bestStreak ?? score;
 
     const { data: existing } = await supabase
-      .from('scores')
+      .from('leaderboard_hourly')
       .select('*')
       .eq('user_id', userId)
       .eq('mode', mode)
@@ -131,22 +131,20 @@ const useLeaderboardStore = create((set, get) => ({
     if (existing) {
       const newHighScore = Math.max(existing.high_score, score);
       const newBestStreak = Math.max(existing.best_streak, streak);
-      if (newHighScore > existing.high_score || newBestStreak > existing.best_streak) {
-        await supabase
-          .from('scores')
-          .update({
-            high_score: newHighScore,
-            best_streak: newBestStreak,
-            updated_at: submitTs,
-            last_submit: submitTs,
-          })
-          .eq('user_id', userId)
-          .eq('mode', mode);
-      }
       isNewHigh = newHighScore > existing.high_score;
+      await supabase
+        .from('leaderboard_hourly')
+        .update({
+          high_score: newHighScore,
+          best_streak: newBestStreak,
+          updated_at: submitTs,
+          last_submit: submitTs,
+        })
+        .eq('user_id', userId)
+        .eq('mode', mode);
     } else {
       await supabase
-        .from('scores')
+        .from('leaderboard_hourly')
         .insert({
           user_id: userId,
           mode,
