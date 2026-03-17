@@ -72,7 +72,7 @@ const useLeaderboardStore = create((set, get) => ({
       .select('*')
       .eq('user_id', userId)
       .eq('mode', mode)
-      .single();
+      .maybeSingle();
 
     let isNewHigh;
     if (existing) {
@@ -81,7 +81,7 @@ const useLeaderboardStore = create((set, get) => ({
       if (newHighScore > existing.high_score || newBestStreak > existing.best_streak) {
         await supabase
           .from('scores')
-          .update({ high_score: newHighScore, best_streak: newBestStreak })
+          .update({ high_score: newHighScore, best_streak: newBestStreak, updated_at: new Date().toISOString() })
           .eq('user_id', userId)
           .eq('mode', mode);
       }
@@ -104,7 +104,7 @@ const useLeaderboardStore = create((set, get) => ({
       .select('high_score, best_streak')
       .eq('user_id', userId)
       .eq('mode', mode)
-      .single();
+      .maybeSingle();
 
     return data ? { highScore: data.high_score, bestStreak: data.best_streak } : { highScore: 0, bestStreak: 0 };
   },
