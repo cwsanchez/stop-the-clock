@@ -24,8 +24,7 @@ import useJourneyStore from '../../stores/useJourneyStore';
 import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
-import { supabase } from '../../lib/supabaseClient';
-
+import { supabase, forceReconnect } from '../../lib/supabaseClient';
 function GameMessage() {
   const { phase } = useTimerStore();
   const { lastResult, mode, feverRunActive, feverEnded, currentMultiplier } = useGameStore();
@@ -155,6 +154,18 @@ export default function App() {
 
     return () => clearInterval(keepAliveId);
   }, []);
+
+  // Force-reconnect + full refetch when the tab regains focus
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        forceReconnect();
+        fetchAllLeaderboards();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchAllLeaderboards]);
 
   useEffect(() => {
     if (!feverRunActive) {
