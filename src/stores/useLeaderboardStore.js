@@ -150,4 +150,16 @@ const useLeaderboardStore = create((set, get) => ({
   },
 }));
 
+// refetchInterval: re-fetch all leaderboards every 30 seconds to prevent stale data
+setInterval(() => {
+  useLeaderboardStore.getState().fetchAllLeaderboards();
+}, 30_000);
+
+// refetchOnWindowFocus: re-fetch when the tab becomes visible after being hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    useLeaderboardStore.getState().fetchAllLeaderboards();
+  }
+});
+
 export default useLeaderboardStore;
