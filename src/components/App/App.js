@@ -477,12 +477,12 @@ export default function App() {
               </motion.div>
 
               <div className="w-full mt-6 lg:hidden">
-                <Leaderboard />
+                <Leaderboard iconsOnly />
               </div>
             </div>
 
             <div className="hidden lg:flex flex-col gap-6">
-              <Leaderboard />
+              <Leaderboard iconsOnly />
             </div>
           </div>
         )}
