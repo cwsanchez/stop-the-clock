@@ -104,6 +104,32 @@ export default function useSound() {
     setTimeout(() => playToneImmediate(220, 0.4, 'sawtooth', 0.06), 300);
   }, [playToneImmediate]);
 
+  const playLifeLost = useCallback(() => {
+    playToneImmediate(440, 0.15, 'sine', 0.12);
+    setTimeout(() => playToneImmediate(330, 0.15, 'sine', 0.1), 100);
+    setTimeout(() => playToneImmediate(220, 0.3, 'sawtooth', 0.08), 200);
+  }, [playToneImmediate]);
+
+  const playBossDefeat = useCallback(() => {
+    playToneImmediate(440, 0.1, 'sine', 0.15);
+    setTimeout(() => playToneImmediate(660, 0.1, 'sine', 0.15), 80);
+    setTimeout(() => playToneImmediate(880, 0.1, 'sine', 0.15), 160);
+    setTimeout(() => playToneImmediate(1100, 0.15, 'sine', 0.18), 240);
+    setTimeout(() => playToneImmediate(1320, 0.2, 'triangle', 0.15), 320);
+  }, [playToneImmediate]);
+
+  const playPowerUp = useCallback(() => {
+    playToneImmediate(660, 0.08, 'sine', 0.12);
+    setTimeout(() => playToneImmediate(990, 0.08, 'sine', 0.12), 50);
+    setTimeout(() => playToneImmediate(1320, 0.12, 'sine', 0.1), 100);
+  }, [playToneImmediate]);
+
+  const playShieldBreak = useCallback(() => {
+    playToneImmediate(800, 0.1, 'square', 0.1);
+    setTimeout(() => playToneImmediate(400, 0.2, 'sawtooth', 0.08), 50);
+    setTimeout(() => playToneImmediate(200, 0.3, 'sawtooth', 0.06), 100);
+  }, [playToneImmediate]);
+
   return {
     playSuccess,
     playFail,
@@ -112,5 +138,9 @@ export default function useSound() {
     playFeverPerfect,
     playMultiplierChime,
     playFeverEnd,
+    playLifeLost,
+    playBossDefeat,
+    playPowerUp,
+    playShieldBreak,
   };
 }

@@ -81,3 +81,48 @@
     box-shadow: 0 0 40px rgba(255, 68, 0, 0.5), 0 0 80px rgba(255, 0, 68, 0.25), 0 0 120px rgba(255, 140, 0, 0.1);
   }
 }
+
+@keyframes journey-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.25), 0 0 60px rgba(139, 92, 246, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.4), 0 0 80px rgba(139, 92, 246, 0.2), 0 0 120px rgba(124, 58, 237, 0.1);
+  }
+}
+
+@keyframes journey-drift-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 20px); }
+}
+
+@keyframes journey-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-25px, -15px); }
+}
+
+@keyframes journey-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes journey-boss-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+
+@keyframes journey-target-float {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+@keyframes journey-target-glow {
+  0%, 100% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes journey-flash {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}

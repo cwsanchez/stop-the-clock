@@ -28,6 +28,13 @@ module.exports = {
           inferno: '#ff0066',
           neon: '#ff2200',
         },
+        journey: {
+          light: '#c084fc',
+          base: '#a855f7',
+          dark: '#7c3aed',
+          deep: '#6d28d9',
+          cosmic: '#5b21b6',
+        },
       },
       fontFamily: {
         mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
@@ -39,6 +46,7 @@ module.exports = {
         'neon-green': '0 0 5px #39ff14, 0 0 20px rgba(57,255,20,0.3), 0 0 40px rgba(57,255,20,0.1)',
         'neon-red': '0 0 5px #ff3333, 0 0 20px rgba(255,51,51,0.3)',
         'neon-fire': '0 0 10px #ff4400, 0 0 30px rgba(255,68,0,0.4), 0 0 60px rgba(255,68,0,0.2), 0 0 100px rgba(255,0,68,0.1)',
+        'neon-purple': '0 0 5px #a855f7, 0 0 20px rgba(168,85,247,0.3), 0 0 40px rgba(168,85,247,0.1)',
       },
       animation: {
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
