@@ -548,7 +548,7 @@ function SpecialBossEffects({ boss }) {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(45deg, rgba(232,121,249,0.06), rgba(168,85,247,0.06), rgba(56,189,248,0.06), rgba(232,121,249,0.06))',
+            background: 'linear-gradient(45deg, rgba(232,121,249,0.15), rgba(168,85,247,0.12), rgba(56,189,248,0.15), rgba(232,121,249,0.15))',
             backgroundSize: '400% 400%',
             animation: 'journey-psychedelic 3s ease-in-out infinite',
           }}
@@ -556,7 +556,7 @@ function SpecialBossEffects({ boss }) {
         <div
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(ellipse at 30% 50%, rgba(232,121,249,0.08), transparent 60%)',
+            background: 'radial-gradient(ellipse at 30% 50%, rgba(232,121,249,0.18), transparent 60%)',
             animation: 'journey-pulse 2s ease-in-out infinite',
           }}
         />
@@ -570,12 +570,12 @@ function SpecialBossEffects({ boss }) {
         <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(180deg, rgba(110,231,183,0.05) 0%, rgba(0,0,0,0) 40%, rgba(110,231,183,0.04) 100%)',
+            background: 'linear-gradient(180deg, rgba(110,231,183,0.12) 0%, rgba(0,0,0,0) 40%, rgba(110,231,183,0.10) 100%)',
             animation: 'journey-distortion 2s steps(4) infinite',
           }}
         />
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.08]"
           style={{
             backgroundImage: 'repeating-linear-gradient(0deg, #6ee7b7 0px, transparent 1px, transparent 3px)',
             backgroundSize: '100% 3px',
@@ -592,14 +592,14 @@ function SpecialBossEffects({ boss }) {
         <div
           className="absolute inset-0"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(248,113,113,0.06) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse at center, rgba(248,113,113,0.12) 0%, transparent 70%)',
             animation: 'journey-pulse 1.8s ease-in-out infinite',
           }}
         />
         {[0, 1, 2].map(i => (
           <div
             key={i}
-            className="absolute text-2xl opacity-20"
+            className="absolute text-3xl opacity-30"
             style={{
               left: `${20 + i * 30}%`,
               top: `${30 + (i % 2) * 20}%`,
