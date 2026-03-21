@@ -26,10 +26,28 @@ const MINI_BOSSES = [
 ];
 
 const OBJECTIVES = [
-  { id: 'powerUps', label: 'Power-ups', target: 10, emoji: '🔮', color: '#a855f7' },
-  { id: 'hits', label: 'Hits', target: 15, emoji: '🎯', color: '#3b82f6' },
+  { id: 'powerUps', label: 'Power-ups', target: 20, emoji: '🔮', color: '#a855f7' },
+  { id: 'hits', label: 'Hits', target: 30, emoji: '🎯', color: '#3b82f6' },
   { id: 'bosses', label: 'Bosses', target: 4, emoji: '⚔️', color: '#f59e0b' },
 ];
+
+const SPECIAL_BOSSES = {
+  powerUps: {
+    id: 'phantomLord', name: 'Phantom Lord', emoji: '👻',
+    description: 'Psychedelic background, hit .5 marks',
+    color: '#e879f9', effect: 'psychedelic',
+  },
+  hits: {
+    id: 'lichKing', name: 'Lich King', emoji: '💀',
+    description: 'Scary distortion, 10 hits in a row',
+    color: '#6ee7b7', effect: 'distortion',
+  },
+  bosses: {
+    id: 'soulReaper', name: 'Soul Reaper', emoji: '☠️',
+    description: 'Floating reaper orbs to destroy or lose life',
+    color: '#f87171', effect: 'reaperOrbs',
+  },
+};
 
 const POWERUPS = [
   { id: 'doublePoints', name: '2× Points', emoji: '⚡', duration: 10000, color: '#fbbf24' },
@@ -78,6 +96,13 @@ const INITIAL_STATE = {
   efficiency: 0,
   totalSeconds: 0,
   lastInactivityPenaltyMs: 0,
+  completedObjectives: {},
+  pendingSpecialBosses: [],
+  specialBossOffer: null,
+  currentSpecialBoss: null,
+  lastSpecialBossDefeatedTime: 0,
+  specialBossMultiplierEndMs: 0,
+  specialBossesAccepted: 0,
 };
 
 const useJourneyStore = create((set, get) => ({
@@ -101,8 +126,9 @@ const useJourneyStore = create((set, get) => ({
     const now = Date.now();
     const doubleActive = state.activePowerUp === 'doublePoints' && now < state.powerUpEndMs;
     const pointMult = doubleActive ? 2 : 1;
+    const specialMult = (state.currentSpecialBoss && now < state.specialBossMultiplierEndMs) ? 3 : 1;
 
-    const points = 1 * state.currentMultiplier * pointMult;
+    const points = 1 * state.currentMultiplier * pointMult * specialMult;
     let newMultiplier = state.currentMultiplier;
     if (isPerfect) {
       newMultiplier = Math.min(state.currentMultiplier + 0.5, 5);
@@ -123,6 +149,8 @@ const useJourneyStore = create((set, get) => ({
     if (state.currentBoss) {
       setTimeout(() => get().checkBossProgress(isPerfect, newMultiplier), 0);
     }
+
+    setTimeout(() => get().checkObjectiveCompletion('hits'), 0);
 
     return { points, newMultiplier, oldMultiplier: state.currentMultiplier };
   },
@@ -231,6 +259,8 @@ const useJourneyStore = create((set, get) => ({
     setTimeout(() => {
       set({ currentBoss: null, bossProgress: 0, bossDefeatedAnimation: false, bossOrbs: [] });
     }, 2000);
+
+    setTimeout(() => get().checkObjectiveCompletion('bosses'), 0);
   },
 
   spawnFloatingTarget: () => {
@@ -270,6 +300,8 @@ const useJourneyStore = create((set, get) => ({
         powerUpsCollected: newTotalPowerUps,
         bossPowerUpsCollected: newBossPowerUps,
       });
+
+      setTimeout(() => get().checkObjectiveCompletion('powerUps'), 0);
 
       return target.powerUp;
     }
@@ -329,8 +361,59 @@ const useJourneyStore = create((set, get) => ({
     }
   },
 
+  checkObjectiveCompletion: (objectiveId) => {
+    const state = get();
+    if (state.completedObjectives[objectiveId]) return;
+
+    const metric = { powerUps: state.powerUpsCollected, hits: state.totalHits, bosses: state.bossesDefeated };
+    const target = OBJECTIVES.find(o => o.id === objectiveId)?.target;
+    if (!target || metric[objectiveId] < target) return;
+
+    set({
+      completedObjectives: { ...state.completedObjectives, [objectiveId]: true },
+      pendingSpecialBosses: [...state.pendingSpecialBosses, objectiveId],
+    });
+  },
+
+  tryOfferSpecialBoss: (totalPlaytimeSecs) => {
+    const state = get();
+    if (state.specialBossOffer || state.currentSpecialBoss) return;
+    if (state.pendingSpecialBosses.length === 0) return;
+    if (state.specialBossesAccepted >= 3) return;
+    if (totalPlaytimeSecs <= 60) return;
+
+    const sinceLast = state.lastSpecialBossDefeatedTime > 0
+      ? (Date.now() - state.lastSpecialBossDefeatedTime) / 1000
+      : Infinity;
+    if (sinceLast <= 30) return;
+
+    const nextId = state.pendingSpecialBosses[0];
+    set({ specialBossOffer: { ...SPECIAL_BOSSES[nextId], objectiveId: nextId } });
+  },
+
+  acceptSpecialBoss: () => {
+    const state = get();
+    if (!state.specialBossOffer) return;
+
+    set({
+      currentSpecialBoss: state.specialBossOffer,
+      specialBossOffer: null,
+      pendingSpecialBosses: state.pendingSpecialBosses.slice(1),
+      specialBossMultiplierEndMs: Date.now() + 60000,
+      specialBossesAccepted: state.specialBossesAccepted + 1,
+    });
+  },
+
+  declineSpecialBoss: () => {
+    const state = get();
+    set({
+      specialBossOffer: null,
+      pendingSpecialBosses: state.pendingSpecialBosses.slice(1),
+    });
+  },
+
   resetJourney: () => set({ ...INITIAL_STATE }),
 }));
 
-export { MINI_BOSSES, OBJECTIVES, POWERUPS };
+export { MINI_BOSSES, OBJECTIVES, POWERUPS, SPECIAL_BOSSES };
 export default useJourneyStore;

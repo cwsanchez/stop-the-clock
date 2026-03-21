@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Swords, Heart, Zap, Shield, Play } from 'lucide-react';
 import useTimerStore from '../../stores/useTimerStore';
-import useJourneyStore, { POWERUPS, OBJECTIVES } from '../../stores/useJourneyStore';
+import useJourneyStore, { POWERUPS, OBJECTIVES, SPECIAL_BOSSES } from '../../stores/useJourneyStore';
 import useGameStore from '../../stores/useGameStore';
 import useAuthStore from '../../stores/useAuthStore';
 import useSound from '../../hooks/useSound';
@@ -467,6 +467,195 @@ function LifeLostFlash({ show }) {
   );
 }
 
+/* ─── Special Boss Offer Modal ─── */
+function SpecialBossOfferModal({ offer, onAccept, onDecline }) {
+  if (!offer) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    >
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+        className="relative flex flex-col items-center gap-4 px-8 py-8 rounded-2xl border max-w-sm w-full mx-4"
+        style={{
+          background: 'rgba(10,10,20,0.95)',
+          borderColor: `${offer.color}50`,
+          boxShadow: `0 0 40px ${offer.color}30, 0 0 80px ${offer.color}15`,
+        }}
+      >
+        <span className="text-5xl" style={{ filter: `drop-shadow(0 0 12px ${offer.color})` }}>
+          {offer.emoji}
+        </span>
+        <h3
+          className="text-xl font-display uppercase tracking-[0.2em]"
+          style={{ color: offer.color, textShadow: `0 0 20px ${offer.color}` }}
+        >
+          {offer.name}
+        </h3>
+        <p className="text-xs font-mono text-gray-400 text-center leading-relaxed">
+          {offer.description}
+        </p>
+        <div
+          className="flex items-center gap-2 px-3 py-1 rounded-full border mt-1"
+          style={{ background: '#fbbf2415', borderColor: '#fbbf2440' }}
+        >
+          <Zap size={12} className="text-yellow-400" />
+          <span className="text-xs font-mono text-yellow-400">×3 MULTIPLIER FOR 60s</span>
+        </div>
+        <div className="flex gap-3 mt-3 w-full">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onAccept}
+            className="flex-1 py-3 rounded-xl border font-mono uppercase tracking-wider text-sm transition-all"
+            style={{
+              background: `${offer.color}20`,
+              borderColor: `${offer.color}60`,
+              color: offer.color,
+              textShadow: `0 0 8px ${offer.color}`,
+              boxShadow: `0 0 15px ${offer.color}20`,
+            }}
+          >
+            Accept
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onDecline}
+            className="flex-1 py-3 rounded-xl border font-mono uppercase tracking-wider text-sm text-gray-400 bg-gray-800/50 border-gray-600/40 hover:bg-gray-700/50 transition-all"
+          >
+            Decline
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Special Boss Visual Effects ─── */
+function SpecialBossEffects({ boss }) {
+  if (!boss) return null;
+
+  if (boss.effect === 'psychedelic') {
+    return (
+      <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden rounded-3xl">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(45deg, rgba(232,121,249,0.15), rgba(168,85,247,0.12), rgba(56,189,248,0.15), rgba(232,121,249,0.15))',
+            backgroundSize: '400% 400%',
+            animation: 'journey-psychedelic 3s ease-in-out infinite',
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at 30% 50%, rgba(232,121,249,0.18), transparent 60%)',
+            animation: 'journey-pulse 2s ease-in-out infinite',
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (boss.effect === 'distortion') {
+    return (
+      <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden rounded-3xl">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(180deg, rgba(110,231,183,0.12) 0%, rgba(0,0,0,0) 40%, rgba(110,231,183,0.10) 100%)',
+            animation: 'journey-distortion 2s steps(4) infinite',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, #6ee7b7 0px, transparent 1px, transparent 3px)',
+            backgroundSize: '100% 3px',
+            animation: 'journey-scanlines 0.1s linear infinite',
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (boss.effect === 'reaperOrbs') {
+    return (
+      <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden rounded-3xl">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'radial-gradient(ellipse at center, rgba(248,113,113,0.12) 0%, transparent 70%)',
+            animation: 'journey-pulse 1.8s ease-in-out infinite',
+          }}
+        />
+        {[0, 1, 2].map(i => (
+          <div
+            key={i}
+            className="absolute text-3xl opacity-30"
+            style={{
+              left: `${20 + i * 30}%`,
+              top: `${30 + (i % 2) * 20}%`,
+              animation: `journey-target-float ${2.5 + i * 0.5}s ease-in-out infinite`,
+              animationDelay: `${i * 0.8}s`,
+            }}
+          >
+            ☠️
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/* ─── Special Boss x3 Multiplier Banner ─── */
+function SpecialMultiplierBanner({ boss, endMs }) {
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    if (!endMs) return;
+    const tick = () => setRemaining(Math.max(0, endMs - Date.now()));
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [endMs]);
+
+  if (!boss || remaining <= 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full border"
+      style={{
+        background: `${boss.color}15`,
+        borderColor: `${boss.color}40`,
+        boxShadow: `0 0 20px ${boss.color}25`,
+      }}
+    >
+      <span
+        className="text-xs font-display uppercase tracking-[0.2em]"
+        style={{ color: boss.color, textShadow: `0 0 10px ${boss.color}` }}
+      >
+        ×3 MULTIPLIER ACTIVE
+      </span>
+      <span className="text-[10px] font-mono text-gray-400 ml-2">
+        {Math.ceil(remaining / 1000)}s
+      </span>
+    </motion.div>
+  );
+}
+
 /* ═══════════════════════════════════════════
    MAIN JOURNEY MODE COMPONENT
    ═══════════════════════════════════════════ */
@@ -479,9 +668,11 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     shieldActive, journeyScore, totalHits, difficultySelected,
     bossSpawnTime, lastInactivityPenaltyMs, powerUpsCollected,
     bossOrbs,
+    specialBossOffer, currentSpecialBoss, specialBossMultiplierEndMs,
     startJourney, journeyHit, journeyMiss, endJourney,
     spawnBoss, spawnFloatingTarget, collectTarget, removeExpiredTargets,
     spawnBossOrb, clickBossOrb, removeExpiredBossOrbs,
+    tryOfferSpecialBoss, acceptSpecialBoss, declineSpecialBoss,
     resetJourney,
   } = useJourneyStore();
   const { user } = useAuthStore();
@@ -584,6 +775,17 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       if (jState.activePowerUp && Date.now() >= jState.powerUpEndMs) {
         useJourneyStore.setState({ activePowerUp: null, powerUpEndMs: 0, shieldActive: false });
       }
+
+      if (jState.currentSpecialBoss && Date.now() >= jState.specialBossMultiplierEndMs) {
+        useJourneyStore.setState({
+          currentSpecialBoss: null,
+          specialBossMultiplierEndMs: 0,
+          lastSpecialBossDefeatedTime: Date.now(),
+        });
+      }
+
+      const totalPlaytime = (tState.elapsedMs - jState.journeyStartMs) / 1000;
+      jState.tryOfferSpecialBoss(totalPlaytime);
     }, 250);
 
     return () => {
@@ -744,6 +946,9 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       <ShieldFlash show={shieldFlash} />
       <LifeLostFlash show={lifeLostFlash} />
 
+      <SpecialBossEffects boss={currentSpecialBoss} />
+      <SpecialMultiplierBanner boss={currentSpecialBoss} endMs={specialBossMultiplierEndMs} />
+
       <JourneyRulesPanel />
 
       {/* HUD Top Bar */}
@@ -845,6 +1050,12 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
           />
         </div>
       )}
+
+      <SpecialBossOfferModal
+        offer={specialBossOffer}
+        onAccept={acceptSpecialBoss}
+        onDecline={declineSpecialBoss}
+      />
     </div>
   );
 }
