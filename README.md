@@ -353,9 +353,9 @@ Edit the `MINI_BOSSES` array at the top of `src/stores/useJourneyStore.js`. Each
   id: 'sentinel',
   name: 'The Sentinel',
   emoji: '👁️',
-  objective: 'chainPerfect',    // 'chainPerfect' | 'iconCollect' | 'hitChain' | 'powerUpCollect'
-  baseRequirement: 3,           // ramped by Math.floor(survivedSecs / 90)
-  minTime: 0,                   // seconds of survived time before this boss can appear
+  objective: 'chainHit',        // 'chainHit' | 'orbCollect'
+  baseRequirement: 3,           // ramped +1 every 90s after 150s
+  minTime: 15,                  // seconds of survived time before this boss can appear
 }
 ```
 

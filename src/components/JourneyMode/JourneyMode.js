@@ -188,6 +188,44 @@ function FloatingTarget({ target, onCollect }) {
   );
 }
 
+/* ─── Boss Orb (for orbCollect bosses) ─── */
+function BossOrb({ orb, bossColor, lifespan, onClick }) {
+  const elapsed = Date.now() - orb.spawnTime;
+  const fadeStart = lifespan * 0.6;
+  const startOpacity = elapsed > fadeStart ? Math.max(1 - (elapsed - fadeStart) / (lifespan - fadeStart), 0.2) : 1;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: startOpacity, scale: 1 }}
+      exit={{ opacity: 0, scale: 0 }}
+      transition={{ duration: 0.25 }}
+      onClick={() => onClick(orb.id)}
+      className="absolute z-30 cursor-pointer"
+      style={{
+        left: `${orb.x}%`,
+        top: `${orb.y}%`,
+        transform: 'translate(-50%, -50%)',
+      }}
+    >
+      <div
+        className="w-11 h-11 rounded-full flex items-center justify-center border-2 hover:scale-125 transition-transform"
+        style={{
+          background: `radial-gradient(circle, ${bossColor}50, ${bossColor}15)`,
+          borderColor: `${bossColor}90`,
+          boxShadow: `0 0 18px ${bossColor}60, 0 0 36px ${bossColor}30`,
+          animation: 'journey-target-glow 1.5s ease-in-out infinite',
+        }}
+      >
+        <div
+          className="w-4 h-4 rounded-full"
+          style={{ background: bossColor, boxShadow: `0 0 10px ${bossColor}` }}
+        />
+      </div>
+    </motion.button>
+  );
+}
+
 /* ─── Boss Encounter ─── */
 function BossEncounter({ boss, progress, defeated }) {
   if (!boss) return null;
@@ -440,8 +478,10 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     bossDefeatedAnimation, floatingTargets, activePowerUp, powerUpEndMs,
     shieldActive, journeyScore, totalHits, difficultySelected,
     bossSpawnTime, lastInactivityPenaltyMs, powerUpsCollected,
+    bossOrbs,
     startJourney, journeyHit, journeyMiss, endJourney,
     spawnBoss, spawnFloatingTarget, collectTarget, removeExpiredTargets,
+    spawnBossOrb, clickBossOrb, removeExpiredBossOrbs,
     resetJourney,
   } = useJourneyStore();
   const { user } = useAuthStore();
@@ -529,6 +569,14 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
 
       if (!jState.currentBoss && !jState.bossDefeatedAnimation && Date.now() >= jState.bossSpawnTime && jState.bossSpawnTime > 0) {
         jState.spawnBoss(tState.elapsedMs);
+      }
+
+      if (jState.currentBoss && jState.currentBoss.objective === 'orbCollect' && !jState.bossDefeatedAnimation) {
+        const interval = jState.currentBoss.orbSpawnInterval || 2000;
+        if (Date.now() - jState.lastBossOrbSpawnTime >= interval) {
+          jState.spawnBossOrb();
+        }
+        jState.removeExpiredBossOrbs();
       }
 
       jState.removeExpiredTargets();
@@ -647,6 +695,15 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     }
   }, [collectTarget, playPowerUp, playBossDefeat]);
 
+  const handleClickBossOrb = useCallback((orbId) => {
+    clickBossOrb(orbId);
+    const jState = useJourneyStore.getState();
+    if (jState.bossDefeatedAnimation) {
+      fireBossDefeatConfetti(jState.currentBoss?.color || '#a855f7');
+      playBossDefeat();
+    }
+  }, [clickBossOrb, playBossDefeat]);
+
   const handleReset = useCallback(() => {
     resetJourney();
     resetTimerLoop();
@@ -713,6 +770,17 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       {/* Floating Targets */}
       {floatingTargets.map(t => (
         <FloatingTarget key={t.id} target={t} onCollect={handleCollectTarget} />
+      ))}
+
+      {/* Boss Orbs (orbCollect bosses) */}
+      {currentBoss && currentBoss.objective === 'orbCollect' && bossOrbs.map(o => (
+        <BossOrb
+          key={o.id}
+          orb={o}
+          bossColor={currentBoss.color}
+          lifespan={currentBoss.orbLifespan || 3000}
+          onClick={handleClickBossOrb}
+        />
       ))}
 
       {/* Center: Timer + Message + Controls */}
