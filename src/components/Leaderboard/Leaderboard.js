@@ -21,7 +21,7 @@ function DailyCountdown() {
   return (
     <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-mono">
       <Clock size={10} className="text-gray-600" />
-      <span>Daily leaderboard resets at midnight UTC &mdash; {timeUntilReset} remaining</span>
+      <span>Daily reset in {timeUntilReset}</span>
     </div>
   );
 }
