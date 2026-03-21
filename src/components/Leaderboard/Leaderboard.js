@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Flame, Baby, Zap, Swords, Clock } from 'lucide-react';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
@@ -15,34 +15,13 @@ function RankBadge({ rank }) {
   );
 }
 
-function getTimeUntilNextHour() {
-  const now = new Date();
-  const nextHour = new Date(now);
-  nextHour.setMinutes(0, 0, 0);
-  nextHour.setHours(nextHour.getHours() + 1);
-  return nextHour - now;
-}
-
-function formatCountdown(ms) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
-}
-
-function HourlyCountdown() {
-  const [remaining, setRemaining] = useState(getTimeUntilNextHour);
-
-  useEffect(() => {
-    const tick = () => setRemaining(getTimeUntilNextHour());
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
+function DailyCountdown() {
+  const timeUntilReset = useLeaderboardStore((s) => s.timeUntilReset);
 
   return (
     <div className="flex items-center gap-1.5 text-[10px] text-gray-500 font-mono">
       <Clock size={10} className="text-gray-600" />
-      <span>{formatCountdown(remaining)} until reset</span>
+      <span>Daily leaderboard resets at midnight UTC &mdash; {timeUntilReset} remaining</span>
     </div>
   );
 }
@@ -96,12 +75,12 @@ export default function Leaderboard({ iconsOnly = false }) {
           Leaderboard
         </h2>
         <span className="text-xs text-gray-600 font-mono ml-auto">
-          Hourly
+          Daily
         </span>
       </div>
 
       <div className="flex justify-end mb-3">
-        <HourlyCountdown />
+        <DailyCountdown />
       </div>
 
       <div className="flex gap-1 mb-4 bg-dark-900/50 rounded-xl p-1">

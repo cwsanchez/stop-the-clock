@@ -51,6 +51,20 @@ async function withRetry(queryFn) {
   }
 }
 
+function getNextResetTime() {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return next;
+}
+
+function formatTimeUntilReset() {
+  const ms = Math.max(0, getNextResetTime() - Date.now());
+  const totalMinutes = Math.floor(ms / 60000);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h ${m}m`;
+}
+
 const useLeaderboardStore = create((set, get) => ({
   classicLeaderboard: [],
   weenieLeaderboard: [],
@@ -59,6 +73,8 @@ const useLeaderboardStore = create((set, get) => ({
   loading: false,
   lastSubmitTime: 0,
   activeLeaderboardTab: 'classic',
+  nextResetTime: getNextResetTime(),
+  timeUntilReset: formatTimeUntilReset(),
 
   setActiveLeaderboardTab: (tab) => set({ activeLeaderboardTab: tab }),
 
@@ -70,7 +86,7 @@ const useLeaderboardStore = create((set, get) => ({
 
     const doQuery = () =>
       supabase
-        .from('leaderboard_hourly')
+        .from('leaderboard_daily')
         .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
         .eq('mode', mode)
         .order('high_score', { ascending: false })
@@ -131,7 +147,7 @@ const useLeaderboardStore = create((set, get) => ({
     const streak = bestStreak ?? score;
 
     const { data: existing } = await supabase
-      .from('leaderboard_hourly')
+      .from('leaderboard_daily')
       .select('*')
       .eq('user_id', userId)
       .eq('mode', mode)
@@ -174,7 +190,7 @@ const useLeaderboardStore = create((set, get) => ({
 
     const doQuery = () =>
       supabase
-        .from('leaderboard_hourly')
+        .from('leaderboard_daily')
         .select('high_score, best_streak')
         .eq('user_id', userId)
         .eq('mode', mode)
@@ -186,5 +202,12 @@ const useLeaderboardStore = create((set, get) => ({
     return { highScore: data.high_score, bestStreak: data.best_streak };
   },
 }));
+
+setInterval(() => {
+  useLeaderboardStore.setState({
+    nextResetTime: getNextResetTime(),
+    timeUntilReset: formatTimeUntilReset(),
+  });
+}, 30_000);
 
 export default useLeaderboardStore;

@@ -166,7 +166,9 @@ useLeaderboardStore ◄─► Supabase Postgres (scores, profiles)
 |---|---|---|
 | `profiles` | `id`, `display_name` | User display names |
 | `scores` | `user_id`, `mode`, `high_score`, `best_streak`, `updated_at` | Per-user high score per mode |
-| `leaderboard_hourly` | (view) | Leaderboard query view |
+| `leaderboard_daily` | (view) | Leaderboard query view |
+
+The leaderboard resets every day at 00:00 UTC. The UI shows "Daily leaderboard resets at midnight UTC (Xh Ym remaining)".
 
 ---
 
