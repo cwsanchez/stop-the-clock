@@ -25,7 +25,7 @@ A precision-timing game where milliseconds decide everything. Built with **React
 | **Classic** | 🔥 | Exact `:00` only | Stop → Chain → Build streak | Streak count |
 | **Weenie Hut Jr** | 👶 | ±0.05 s | Same as Classic, with forgiveness | Streak count |
 | **Fever** | ⚡ | ±0.05 s (near) / exact (perfect) | Nonstop timer, multiplier ramp | `rawPoints × efficiency` |
-| **Journey** | ⚔️ | Varies by difficulty | 5 lives, bosses, souls, power-ups | `(raw + bonuses) × efficiency` |
+| **Journey** | ⚔️ | Varies by difficulty | 5 lives, mini-bosses, objectives, power-ups | `(raw + bonuses) × efficiency` |
 
 Each mode has its **own global leaderboard** and **per-user high score tracking**.
 
@@ -53,7 +53,7 @@ The timer **never stops**. Keep hitting at `:00` to rack up points.
 
 ### Journey ⚔️
 
-An endurance gauntlet with lives, difficulty tiers, bosses, souls, floating power-up orbs, and an efficiency-weighted final score.
+An endurance gauntlet with lives, difficulty tiers, progressive mini-bosses, run objectives, floating power-up orbs, and an efficiency-weighted final score.
 
 👉 **[Full Journey Mode deep-dive →](src/docs/JourneyMode.md)**
 
@@ -95,12 +95,12 @@ finalScore  = rawPoints × efficiency
 ### Journey
 
 ```
-rawScore    = Σ (1 × multiplierAtHit × pointMultiplier)
-bossBonus   = bossesDefeated × 50
-soulBonus   = souls × 2
-efficiency  = totalHits / totalSeconds
+rawScore       = Σ (1 × multiplierAtHit × pointMultiplier)
+bossBonus      = bossesDefeated × 50
+objectiveBonus = (powerUpPct + hitsPct + bossesPct) / 3 × 150
+efficiency     = totalHits / totalSeconds
 
-finalScore  = (rawScore + bossBonus + soulBonus) × max(efficiency, 0.01)
+finalScore     = (rawScore + bossBonus + objectiveBonus) × max(efficiency, 0.01)
 ```
 
 *`pointMultiplier` is 2 when the ⚡ 2× Points power-up is active, otherwise 1.*
@@ -156,7 +156,7 @@ useLeaderboardStore ◄─► Supabase Postgres (scores, profiles)
 |---|---|
 | `useTimerStore` | Elapsed time, running state, phase (`idle` / `running` / `stopped-success` / `stopped-fail`) |
 | `useGameStore` | Mode, score, personal best, Fever multiplier / total / efficiency |
-| `useJourneyStore` | Lives, souls, bosses, power-ups, floating targets, difficulty, Journey scoring |
+| `useJourneyStore` | Lives, mini-bosses, objectives, power-ups, floating targets, difficulty, Journey scoring |
 | `useLeaderboardStore` | Leaderboard fetch/submit, rate limiting, retries |
 | `useAuthStore` | Supabase auth state, user profile, sign-in / sign-up / sign-out |
 
@@ -277,7 +277,7 @@ src/
 ├── stores/
 │   ├── useTimerStore.js            # Timer elapsed time & phase (Zustand)
 │   ├── useGameStore.js             # Game mode, score, Fever state (Zustand)
-│   ├── useJourneyStore.js          # Journey mode state — lives, bosses, souls, power-ups
+│   ├── useJourneyStore.js          # Journey mode state — lives, mini-bosses, objectives, power-ups
 │   ├── useLeaderboardStore.js      # Leaderboard CRUD + rate limiting (Zustand)
 │   └── useAuthStore.js             # Supabase Auth wrapper (Zustand)
 ├── hooks/
@@ -326,35 +326,36 @@ All gameplay constants live in a handful of files — no hunting required.
 |---|---|---|
 | Multiplier step / cap | `useGameStore.js` (Fever) / `useJourneyStore.js` (Journey) | `+0.5` per perfect, max `5` |
 | Fever final score | `useGameStore.js` → `endFeverRun()` | `feverTotal × efficiency` |
-| Journey final score | `useJourneyStore.js` → `endJourney()` | `(score + bosses×50 + souls×2) × max(eff, 0.01)` |
+| Journey final score | `useJourneyStore.js` → `endJourney()` | `(score + bosses×50 + objBonus) × max(eff, 0.01)` |
 
 ### Journey Mode Tuning
 
 | What | Constant / Location | Default |
 |---|---|---|
 | Starting lives | `INITIAL_STATE.lives` in `useJourneyStore.js` | `5` |
-| Boss spawn interval | `startJourney()` / `defeatBoss()` in `useJourneyStore.js` | `45 000 – 60 000 ms` |
+| Boss spawn interval | `startJourney()` / `defeatBoss()` in `useJourneyStore.js` | `15 000 ms` |
+| Boss difficulty ramp | `spawnBoss()` in `useJourneyStore.js` | `Math.floor(survivedSecs / 90)` |
 | Floating target spawn interval | `JourneyMode.js` → target spawn `useEffect` | `8 000 – 12 000 ms` |
 | Max simultaneous targets | `spawnFloatingTarget()` in `useJourneyStore.js` | `2` |
 | Target expiry | `spawnFloatingTarget()` in `useJourneyStore.js` | `6 000 ms` |
 | Inactivity penalty threshold | `JourneyMode.js` game loop | `5 000 ms` |
 | Multiplier decay threshold | `JourneyMode.js` game loop | `1 000 ms` |
-| Boss defeat rewards | `defeatBoss()` in `useJourneyStore.js` | `+50 pts, +5 souls, multiplier +1` |
-| Power-up durations | `POWERUPS` array in `useJourneyStore.js` | 10 s / 15 s / 10 s |
+| Boss defeat rewards | `defeatBoss()` in `useJourneyStore.js` | `+50 pts, multiplier +1` |
+| Objective targets | `OBJECTIVES` in `useJourneyStore.js` | 10 / 15 / 4 |
+| Power-up durations | `POWERUPS` array in `useJourneyStore.js` | 10 s / 15 s |
 
-### Bosses & Special Bosses
+### Mini-Bosses
 
-Edit `BOSSES` and `SPECIAL_BOSSES` arrays at the top of `src/stores/useJourneyStore.js`. Each boss has:
+Edit the `MINI_BOSSES` array at the top of `src/stores/useJourneyStore.js`. Each boss has:
 
 ```js
 {
   id: 'sentinel',
   name: 'The Sentinel',
   emoji: '👁️',
-  objective: 'triplePerfect',    // 'triplePerfect' | 'streakMaster' | 'multiplierRush'
-  objectiveDesc: 'Hit exactly :00 three times!',
-  requirement: 3,
-  soulThreshold: 15,             // special bosses only — souls needed to unlock
+  objective: 'chainPerfect',    // 'chainPerfect' | 'iconCollect' | 'hitChain' | 'powerUpCollect'
+  baseRequirement: 3,           // ramped by Math.floor(survivedSecs / 90)
+  minTime: 0,                   // seconds of survived time before this boss can appear
 }
 ```
 
@@ -365,7 +366,6 @@ Edit the `POWERUPS` array in `src/stores/useJourneyStore.js`:
 ```js
 { id: 'doublePoints', name: '2× Points', emoji: '⚡', duration: 10000, color: '#fbbf24' },
 { id: 'shield',       name: 'Shield',    emoji: '🛡️', duration: 15000, color: '#3b82f6' },
-{ id: 'soulMagnet',   name: '+Souls',    emoji: '🧲', duration: 10000, color: '#a855f7' },
 ```
 
 ### Leaderboard

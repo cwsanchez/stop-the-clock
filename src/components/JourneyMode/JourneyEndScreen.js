@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Swords, Ghost, Target, Clock, TrendingUp, Trophy, RotateCcw, Shield } from 'lucide-react';
-import useJourneyStore from '../../stores/useJourneyStore';
+import { Swords, Target, Clock, TrendingUp, Trophy, RotateCcw, Shield, Zap } from 'lucide-react';
+import useJourneyStore, { OBJECTIVES } from '../../stores/useJourneyStore';
 import useAuthStore from '../../stores/useAuthStore';
 import useGameStore from '../../stores/useGameStore';
 
@@ -20,10 +20,55 @@ function StatCard({ icon: Icon, label, value, color, delay }) {
   );
 }
 
+function ObjectiveSummary({ powerUpsCollected, totalHits, bossesDefeated, delay }) {
+  const values = [powerUpsCollected, totalHits, bossesDefeated];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="w-full rounded-xl bg-dark-800/50 border border-gray-800/50 p-3"
+    >
+      <span className="text-[10px] text-gray-500 uppercase tracking-wider font-mono block text-center mb-2">
+        Objectives
+      </span>
+      <div className="flex gap-3">
+        {OBJECTIVES.map((obj, i) => {
+          const current = Math.min(values[i], obj.target);
+          const complete = current >= obj.target;
+
+          return (
+            <div key={obj.id} className="flex flex-col items-center flex-1 min-w-0">
+              <span className="text-sm mb-0.5">{obj.emoji}</span>
+              <div className="w-full h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    background: complete ? '#4ade80' : obj.color,
+                    width: `${(current / obj.target) * 100}%`,
+                    boxShadow: complete ? '0 0 8px rgba(74,222,128,0.5)' : 'none',
+                  }}
+                />
+              </div>
+              <span
+                className="text-[9px] font-mono mt-0.5 tabular-nums"
+                style={{ color: complete ? '#4ade80' : '#6b7280' }}
+              >
+                {current}/{obj.target}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function JourneyEndScreen({ onSubmit, onReset }) {
   const {
     finalScore, journeyScore, totalHits, totalSeconds,
-    efficiency, bossesDefeated, souls, difficulty,
+    efficiency, bossesDefeated, powerUpsCollected, difficulty,
   } = useJourneyStore();
   const { user } = useAuthStore();
   const { score } = useGameStore();
@@ -65,10 +110,10 @@ export default function JourneyEndScreen({ onSubmit, onReset }) {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4">
-        <StatCard icon={Ghost} label="Souls" value={souls} color="text-purple-400" delay={0.3} />
-        <StatCard icon={Swords} label="Bosses" value={bossesDefeated} color="text-amber-400" delay={0.35} />
-        <StatCard icon={Target} label="Hits" value={totalHits} color="text-purple-300" delay={0.4} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
+        <StatCard icon={Swords} label="Bosses" value={bossesDefeated} color="text-amber-400" delay={0.3} />
+        <StatCard icon={Target} label="Hits" value={totalHits} color="text-purple-300" delay={0.35} />
+        <StatCard icon={Zap} label="Power-ups" value={powerUpsCollected} color="text-purple-400" delay={0.4} />
         <StatCard icon={Clock} label="Duration" value={`${totalSeconds.toFixed(1)}s`} color="text-gray-300" delay={0.45} />
         <StatCard
           icon={TrendingUp}
@@ -77,7 +122,15 @@ export default function JourneyEndScreen({ onSubmit, onReset }) {
           color={isHighEff ? 'text-neon-green' : 'text-gray-300'}
           delay={0.5}
         />
-        <StatCard icon={Shield} label="Raw Pts" value={journeyScore.toFixed(1)} color="text-purple-300" delay={0.55} />
+      </div>
+
+      <div className="mt-3">
+        <ObjectiveSummary
+          powerUpsCollected={powerUpsCollected}
+          totalHits={totalHits}
+          bossesDefeated={bossesDefeated}
+          delay={0.55}
+        />
       </div>
 
       <motion.div
