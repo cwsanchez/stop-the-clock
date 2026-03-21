@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Swords, Heart, Zap, Ghost, Shield, Play } from 'lucide-react';
+import { Swords, Heart, Zap, Shield, Play } from 'lucide-react';
 import useTimerStore from '../../stores/useTimerStore';
-import useJourneyStore, { POWERUPS } from '../../stores/useJourneyStore';
+import useJourneyStore, { POWERUPS, OBJECTIVES } from '../../stores/useJourneyStore';
 import useGameStore from '../../stores/useGameStore';
 import useAuthStore from '../../stores/useAuthStore';
-// useTimer is managed by App.js — resetTimerLoop passed as prop
 import useSound from '../../hooks/useSound';
 import { formatTime } from '../../utils/formatTime';
 import JourneyEndScreen from './JourneyEndScreen';
@@ -31,11 +30,9 @@ function fireBossDefeatConfetti(color) {
   }, 400);
 }
 
-/* ─── Parallax Background (CSS-only to avoid re-render overhead) ─── */
-function JourneyBackground({ multiplier, souls, active }) {
+/* ─── Parallax Background ─── */
+function JourneyBackground({ multiplier, active }) {
   const intensity = active ? Math.min((multiplier - 1) / 4, 1) : 0;
-  const soulIntensity = Math.min(souls / 50, 1);
-  const combined = Math.min(intensity + soulIntensity * 0.3, 1);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -43,7 +40,7 @@ function JourneyBackground({ multiplier, souls, active }) {
         className="absolute w-[600px] h-[600px] rounded-full blur-3xl"
         style={{
           top: '10%', left: '-10%',
-          background: `radial-gradient(circle, rgba(168,85,247,${0.03 + combined * 0.08}) 0%, transparent 70%)`,
+          background: `radial-gradient(circle, rgba(168,85,247,${0.03 + intensity * 0.08}) 0%, transparent 70%)`,
           animation: 'journey-drift-1 20s ease-in-out infinite',
         }}
       />
@@ -51,7 +48,7 @@ function JourneyBackground({ multiplier, souls, active }) {
         className="absolute w-[500px] h-[500px] rounded-full blur-3xl"
         style={{
           bottom: '5%', right: '-5%',
-          background: `radial-gradient(circle, rgba(139,92,246,${0.03 + combined * 0.06}) 0%, transparent 70%)`,
+          background: `radial-gradient(circle, rgba(139,92,246,${0.03 + intensity * 0.06}) 0%, transparent 70%)`,
           animation: 'journey-drift-2 18s ease-in-out infinite',
         }}
       />
@@ -93,17 +90,6 @@ function LivesDisplay({ lives, maxLives = 5 }) {
         ))}
       </div>
       <span className="text-xs font-mono text-gray-400 ml-1">{lives}</span>
-    </div>
-  );
-}
-
-/* ─── Souls Counter ─── */
-function SoulsCounter({ souls }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <Ghost size={14} className="text-purple-400" />
-      <span className="text-sm font-display tabular-nums text-purple-300">{souls}</span>
-      <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">souls</span>
     </div>
   );
 }
@@ -209,7 +195,7 @@ function BossEncounter({ boss, progress, defeated }) {
 
   return (
     <motion.div
-      key={boss.id}
+      key={boss.id + '-' + boss.requirement}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={
         defeated
@@ -257,7 +243,54 @@ function BossEncounter({ boss, progress, defeated }) {
   );
 }
 
-/* ─── Journey Timer (subscribes to elapsedMs independently to avoid re-rendering parent) ─── */
+/* ─── Objective Progress Bars ─── */
+function ObjectiveProgress({ powerUpsCollected, totalHits, bossesDefeated }) {
+  const values = [powerUpsCollected, totalHits, bossesDefeated];
+
+  return (
+    <div className="flex items-stretch gap-3 w-full max-w-md">
+      {OBJECTIVES.map((obj, i) => {
+        const current = Math.min(values[i], obj.target);
+        const pct = current / obj.target;
+        const complete = current >= obj.target;
+
+        return (
+          <div key={obj.id} className="flex flex-col items-center flex-1 min-w-0">
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-xs">{obj.emoji}</span>
+              <span
+                className="text-[9px] font-mono uppercase tracking-wider truncate"
+                style={{ color: complete ? '#4ade80' : '#9ca3af' }}
+              >
+                {obj.label}
+              </span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-gray-800 overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                initial={false}
+                animate={{ width: `${pct * 100}%` }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  background: complete ? '#4ade80' : obj.color,
+                  boxShadow: complete ? '0 0 8px rgba(74,222,128,0.5)' : 'none',
+                }}
+              />
+            </div>
+            <span
+              className="text-[9px] font-mono mt-0.5 tabular-nums"
+              style={{ color: complete ? '#4ade80' : '#6b7280' }}
+            >
+              {current}/{obj.target}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Journey Timer ─── */
 function JourneyTimer({ multiplier, active }) {
   const elapsedMs = useTimerStore(state => state.elapsedMs);
   const { minutes, seconds, centiseconds } = formatTime(elapsedMs);
@@ -327,7 +360,7 @@ function DifficultySelect({ onSelect, onStart }) {
       </motion.div>
 
       <p className="text-sm font-mono text-gray-400 text-center max-w-md">
-        Survive with 5 lives. Hit the timer, defeat bosses, collect souls.
+        Survive with 5 lives. Hit the timer, defeat mini-bosses, complete objectives.
         How far can you go?
       </p>
 
@@ -375,7 +408,7 @@ function DifficultySelect({ onSelect, onStart }) {
   );
 }
 
-/* ─── Flash Overlays (CSS-only) ─── */
+/* ─── Flash Overlays ─── */
 function ShieldFlash({ show }) {
   if (!show) return null;
   return (
@@ -402,11 +435,11 @@ function LifeLostFlash({ show }) {
 export default function JourneyMode({ onSubmit, resetTimerLoop }) {
   const { startTimer, stopTimer, resetTimer } = useTimerStore();
   const {
-    lives, souls, difficulty, journeyActive, journeyEnded, currentMultiplier,
+    lives, difficulty, journeyActive, journeyEnded, currentMultiplier,
     lastHitElapsedMs, currentBoss, bossProgress, bossesDefeated,
     bossDefeatedAnimation, floatingTargets, activePowerUp, powerUpEndMs,
     shieldActive, journeyScore, totalHits, difficultySelected,
-    bossSpawnTime, lastInactivityPenaltyMs,
+    bossSpawnTime, lastInactivityPenaltyMs, powerUpsCollected,
     startJourney, journeyHit, journeyMiss, endJourney,
     spawnBoss, spawnFloatingTarget, collectTarget, removeExpiredTargets,
     resetJourney,
@@ -422,7 +455,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
   const [shieldFlash, setShieldFlash] = useState(false);
   const [lifeLostFlash, setLifeLostFlash] = useState(false);
 
-  // Sync final score to game store for submission flow
   useEffect(() => {
     if (journeyEnded) {
       const { finalScore } = useJourneyStore.getState();
@@ -430,7 +462,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     }
   }, [journeyEnded]);
 
-  // Cleanup on unmount (mode change away from journey)
   useEffect(() => {
     return () => {
       if (journeyIntervalRef.current) clearInterval(journeyIntervalRef.current);
@@ -438,7 +469,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     };
   }, []);
 
-  // Get hit tolerance based on difficulty
   const getTolerance = useCallback(() => {
     switch (difficulty) {
       case 'easy': return 10;
@@ -453,7 +483,7 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     playFeverEnd();
   }, [endJourney, stopTimer, playFeverEnd]);
 
-  // Main game loop interval
+  // Main game loop
   useEffect(() => {
     if (!journeyActive) {
       if (journeyIntervalRef.current) {
@@ -471,7 +501,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       const msSinceLastHit = tState.elapsedMs - jState.lastHitElapsedMs;
       const msSinceLastPenalty = tState.elapsedMs - jState.lastInactivityPenaltyMs;
 
-      // 5s inactivity penalty
       if (msSinceLastHit >= 5000 && msSinceLastPenalty >= 5000) {
         const result = jState.journeyMiss();
         useJourneyStore.setState({
@@ -494,20 +523,16 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
         }
       }
 
-      // Multiplier reset after 1s inactivity
       if (msSinceLastHit >= 1000 && jState.currentMultiplier > 1) {
         useJourneyStore.setState({ currentMultiplier: 1, perfectStreak: 0 });
       }
 
-      // Boss spawn
       if (!jState.currentBoss && !jState.bossDefeatedAnimation && Date.now() >= jState.bossSpawnTime && jState.bossSpawnTime > 0) {
-        jState.spawnBoss();
+        jState.spawnBoss(tState.elapsedMs);
       }
 
-      // Expired targets
       jState.removeExpiredTargets();
 
-      // Power-up expiry
       if (jState.activePowerUp && Date.now() >= jState.powerUpEndMs) {
         useJourneyStore.setState({ activePowerUp: null, powerUpEndMs: 0, shieldActive: false });
       }
@@ -570,7 +595,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     const isNearHit = cs <= tolerance || cs >= (100 - tolerance);
 
     if (!isPerfect && !isNearHit) {
-      // Hard miss
       const result = journeyMiss();
       if (result.shielded) {
         setShieldFlash(true);
@@ -603,7 +627,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       }
     }
 
-    // Boss defeat confetti check (done via store's setTimeout)
     const jState = useJourneyStore.getState();
     if (jState.bossDefeatedAnimation) {
       fireBossDefeatConfetti(jState.currentBoss?.color || '#a855f7');
@@ -616,8 +639,13 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     const result = collectTarget(targetId, currentMs);
     if (result) {
       playPowerUp();
+      const jState = useJourneyStore.getState();
+      if (jState.bossDefeatedAnimation) {
+        fireBossDefeatConfetti(jState.currentBoss?.color || '#a855f7');
+        playBossDefeat();
+      }
     }
-  }, [collectTarget, playPowerUp]);
+  }, [collectTarget, playPowerUp, playBossDefeat]);
 
   const handleReset = useCallback(() => {
     resetJourney();
@@ -625,7 +653,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     resetTimer();
   }, [resetJourney, resetTimerLoop, resetTimer]);
 
-  // Difficulty select screen
   if (!difficultySelected) {
     return (
       <div className="relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm bg-purple-950/10 border-purple-500/10">
@@ -635,7 +662,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     );
   }
 
-  // Journey ended screen
   if (journeyEnded) {
     return (
       <div className="relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm bg-purple-950/10 border-purple-500/10">
@@ -644,7 +670,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     );
   }
 
-  // Active journey
   return (
     <div
       className="relative w-full border rounded-3xl p-6 sm:p-10 backdrop-blur-sm bg-purple-950/10 border-purple-500/10 min-h-[500px] overflow-hidden"
@@ -656,7 +681,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     >
       <JourneyBackground
         multiplier={currentMultiplier}
-        souls={souls}
         active={journeyActive}
       />
 
@@ -669,7 +693,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       <div className="relative z-10 flex items-start justify-between mb-4">
         <div className="flex flex-col gap-2">
           <LivesDisplay lives={lives} />
-          <SoulsCounter souls={souls} />
         </div>
         <div className="flex flex-col items-end gap-2">
           <MultiplierHUD multiplier={currentMultiplier} />
@@ -711,7 +734,6 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
           </p>
         )}
 
-        {/* HIT Button */}
         {journeyActive && (
           <div className="mt-8">
             <button
@@ -744,6 +766,17 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
           <span className="text-lg font-display tabular-nums text-purple-300">{bossesDefeated}</span>
         </div>
       </div>
+
+      {/* Objective Progress Bars */}
+      {journeyActive && (
+        <div className="relative z-10 flex justify-center mt-4">
+          <ObjectiveProgress
+            powerUpsCollected={powerUpsCollected}
+            totalHits={totalHits}
+            bossesDefeated={bossesDefeated}
+          />
+        </div>
+      )}
     </div>
   );
 }

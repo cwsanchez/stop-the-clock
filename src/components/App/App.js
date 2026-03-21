@@ -523,7 +523,7 @@ export default function App() {
           <div>
             Stop the Clock &mdash; {
               mode === 'journey'
-                ? 'Journey Mode — survive, defeat bosses, collect souls'
+                ? 'Journey Mode — survive, defeat mini-bosses, complete objectives'
                 : mode === 'fever'
                   ? 'Fever Mode — nonstop timer + multiplier madness'
                   : mode === 'weenie'

@@ -1,6 +1,6 @@
 # ⚔️ Journey Mode — Developer Deep-Dive
 
-Journey Mode is an endurance gauntlet layered on top of the core timer mechanic. The player starts with **5 lives**, a nonstop timer, and three difficulty tiers. Bosses appear periodically, floating power-up orbs drift across the screen, and souls accumulate to unlock harder special bosses. The final score is efficiency-weighted.
+Journey Mode is an endurance gauntlet layered on top of the core timer mechanic. The player starts with **5 lives**, a nonstop timer, and three difficulty tiers. Mini-bosses spawn every 15 seconds with progressive difficulty, floating power-up orbs drift across the screen, and three run objectives track your progress. The final score is efficiency-weighted.
 
 This document is the single source of truth for every Journey Mode constant, formula, and code path. All references point to the actual source files — search for the quoted strings or line ranges to jump straight into the code.
 
@@ -12,10 +12,9 @@ This document is the single source of truth for every Journey Mode constant, for
 - [Lives System](#-lives-system)
 - [Hitting the Timer](#-hitting-the-timer)
 - [Multiplier](#-multiplier)
-- [Soul Collection](#-soul-collection)
 - [Floating Targets (Power-ups)](#-floating-targets-power-ups)
-- [Boss Encounters](#-boss-encounters)
-- [Special Bosses](#-special-bosses)
+- [Boss System](#-boss-system)
+- [Run Objectives](#-run-objectives)
 - [Efficiency & Final Score](#-efficiency--final-score)
 - [Game Loop Internals](#-game-loop-internals)
 - [State Shape (useJourneyStore)](#-state-shape-usejourneystore)
@@ -136,29 +135,6 @@ if (isPerfect) {
 
 ---
 
-## 👻 Soul Collection
-
-Souls are a secondary currency that unlock special bosses.
-
-| Source | Souls gained |
-|---|---|
-| Every successful hit | **1** (or **2** with 🧲 Soul Magnet active) |
-| Boss defeated | **+5** |
-
-### Soul Milestones
-
-| Souls reached | Effect |
-|---|---|
-| **15** | Unlocks **Phantom Lord** as a possible boss spawn |
-| **30** | Unlocks **The Lich King** |
-| **50** | Unlocks **Soul Reaper** |
-
-Once a special boss is unlocked, it has a **40% chance** of spawning instead of the next regular boss (if there are unlocked-but-undefeated special bosses available).
-
-**Code ref:** `src/stores/useJourneyStore.js` → `journeyHit()` (soul gain) and `spawnBoss()` (milestone logic)
-
----
-
 ## 🔮 Floating Targets (Power-ups)
 
 Glowing orbs drift on the left or right edge of the screen. Tap one to attempt collection.
@@ -194,9 +170,8 @@ const success = cs <= 10 || cs >= 90;
 |---|---|---|---|---|
 | `doublePoints` | 2× Points | ⚡ | **10 s** | All hit points doubled |
 | `shield` | Shield | 🛡️ | **15 s** | Absorbs one miss (life saved) |
-| `soulMagnet` | +Souls | 🧲 | **10 s** | 2 souls per hit instead of 1 |
 
-Only **one** power-up can be active at a time. Collecting a new one replaces the current one.
+Only **one** power-up can be active at a time. Collecting a new one replaces the current one. Each successful collection also increments the `powerUpsCollected` counter used by run objectives and the Chrono Dragon boss.
 
 **Code ref:** `src/stores/useJourneyStore.js` → `POWERUPS` array (top of file)
 
@@ -204,37 +179,52 @@ Only **one** power-up can be active at a time. Collecting a new one replaces the
 const POWERUPS = [
   { id: 'doublePoints', name: '2× Points', emoji: '⚡', duration: 10000, color: '#fbbf24' },
   { id: 'shield',       name: 'Shield',    emoji: '🛡️', duration: 15000, color: '#3b82f6' },
-  { id: 'soulMagnet',   name: '+Souls',    emoji: '🧲', duration: 10000, color: '#a855f7' },
 ];
 ```
 
 ---
 
-## 👁️ Boss Encounters
+## 👁️ Boss System
 
 ### Spawn Timing
 
-- First boss spawns **45 – 60 seconds** after the Journey starts.
-- After each boss is defeated, the next spawns **45 – 60 seconds** later.
-- Formula: `Date.now() + 45000 + Math.random() * 15000`
+Bosses spawn every **15 seconds**. The first boss appears at **t = 15 s** after the journey starts. After each boss is defeated, the next spawns **15 seconds** later.
 
-### Regular Bosses
+### Mini-Boss Types
 
-Cycle through in order (`bossesDefeated % 3`):
-
-| # | Boss | Emoji | Objective | Requirement |
+| Boss | Emoji | Objective | Base Req | Available From |
 |---|---|---|---|---|
-| 0 | **The Sentinel** | 👁️ | `triplePerfect` | Hit exactly `:00` **3 times** consecutively |
-| 1 | **Stone Golem** | 🗿 | `streakMaster` | Land **5 hits** without missing |
-| 2 | **Chrono Dragon** | 🐉 | `multiplierRush` | Reach **3× multiplier** |
+| **The Sentinel** | 👁️ | `chainPerfect` — Chain N consecutive perfect :00 hits | **3** | 0 s |
+| **Bucky** | 🦌 | `iconCollect` — Land N total hits while boss is active | **4** | 0 s |
+| **Stone Golem** | 🗿 | `hitChain` — Chain N consecutive hits without missing | **5** | 60 s |
+| **Chrono Dragon** | 🐉 | `powerUpCollect` — Collect N power-ups while boss is active | **3** | 60 s |
 
-### Objective Types
+### Phase-based Unlocking
 
-| Objective | Tracked by | Progress counter |
+| Time Window | Available Bosses |
+|---|---|
+| **0 – 60 s** | Sentinel, Bucky |
+| **60 – 150 s** | All 4 bosses |
+| **150 s+** | All 4 bosses, requirements ramp |
+
+### Progressive Difficulty Ramp
+
+After the run progresses, boss requirements increase:
+
+```
+requirement = Math.floor(survivedSeconds / 90) + baseRequirement
+```
+
+Example for Sentinel (base 3): 0–89 s → 3, 90–179 s → 4, 180–269 s → 5, …
+
+### Objective Mechanics
+
+| Objective | Tracked by | Reset behaviour |
 |---|---|---|
-| `triplePerfect` | `consecutivePerfects` | Resets to 0 on any non-perfect hit |
-| `streakMaster` | `hitsWithoutMiss` | Resets to 0 on any miss |
-| `multiplierRush` | `currentMultiplier` | Current multiplier value |
+| `chainPerfect` | `consecutivePerfects` | Resets to 0 on any non-perfect hit; resets on boss spawn |
+| `iconCollect` | `bossHits` | Resets on boss spawn (total hits during this boss fight) |
+| `hitChain` | `hitsWithoutMiss` | Resets to 0 on any miss; resets on boss spawn |
+| `powerUpCollect` | `bossPowerUpsCollected` | Resets on boss spawn (power-ups collected during this boss fight) |
 
 ### Boss Defeat Rewards
 
@@ -243,39 +233,27 @@ When `progress >= requirement`:
 | Reward | Value |
 |---|---|
 | Journey score bonus | **+50** |
-| Souls | **+5** |
 | Multiplier boost | `min(currentMultiplier + 1, 5)` |
 
 The boss defeat animation plays for **2 seconds** (confetti + spin-away), after which the boss clears and the next spawn timer starts.
 
-**Code ref:** `src/stores/useJourneyStore.js` → `BOSSES`, `spawnBoss()`, `checkBossProgress()`, `defeatBoss()`
+**Code ref:** `src/stores/useJourneyStore.js` → `MINI_BOSSES`, `spawnBoss()`, `checkBossProgress()`, `defeatBoss()`
 
 ---
 
-## 💀 Special Bosses
+## 🎯 Run Objectives
 
-Harder variants unlocked by soul milestones. When available (and not yet defeated), there's a **40% roll** each spawn cycle to get a special boss instead of the regular one.
+Three run-wide objectives replace the old soul system. Progress bars are shown at the bottom of the Journey UI.
 
-| Boss | Emoji | Soul Threshold | Objective | Requirement |
-|---|---|---|---|---|
-| **Phantom Lord** | 👻 | 15 souls | `triplePerfect` | **5** perfect hits in a row |
-| **The Lich King** | 💀 | 30 souls | `streakMaster` | **8** hits without missing |
-| **Soul Reaper** | ⚔️ | 50 souls | `multiplierRush` | Reach **5× multiplier** |
+| Objective | Target | Emoji |
+|---|---|---|
+| Collect power-ups | **10** | 🔮 |
+| Land hits | **15** | 🎯 |
+| Defeat bosses | **4** | ⚔️ |
 
-Once a special boss is defeated, it is added to `unlockedSpecialBosses` and **won't spawn again**.
+Each completed objective contributes **+50** to the final score calculation (max **+150** for all three). Partial progress contributes proportionally.
 
-**Code ref:** `src/stores/useJourneyStore.js` → `SPECIAL_BOSSES` array
-
-```js
-const SPECIAL_BOSSES = [
-  { id: 'phantom', name: 'Phantom Lord', emoji: '👻',
-    objective: 'triplePerfect', requirement: 5, soulThreshold: 15 },
-  { id: 'lich',    name: 'The Lich King', emoji: '💀',
-    objective: 'streakMaster',  requirement: 8, soulThreshold: 30 },
-  { id: 'reaper',  name: 'Soul Reaper',   emoji: '⚔️',
-    objective: 'multiplierRush', requirement: 5, soulThreshold: 50 },
-];
-```
+**Code ref:** `src/stores/useJourneyStore.js` → `OBJECTIVES`
 
 ---
 
@@ -284,9 +262,10 @@ const SPECIAL_BOSSES = [
 When all lives are lost (or the journey ends), `endJourney(elapsedMs)` computes:
 
 ```
-totalSeconds = max((elapsedMs - journeyStartMs) / 1000, 0.1)
-efficiency   = totalHits / totalSeconds
-finalScore   = round((journeyScore + bossesDefeated × 50 + souls × 2) × max(efficiency, 0.01) × 100) / 100
+totalSeconds    = max((elapsedMs - journeyStartMs) / 1000, 0.1)
+efficiency      = totalHits / totalSeconds
+objectiveBonus  = (powerUpProgress% + hitsProgress% + bossProgress%) / 3 × 150
+finalScore      = round((journeyScore + bossesDefeated × 50 + objectiveBonus) × max(efficiency, 0.01) × 100) / 100
 ```
 
 ### Breakdown
@@ -295,7 +274,7 @@ finalScore   = round((journeyScore + bossesDefeated × 50 + souls × 2) × max(e
 |---|---|
 | `journeyScore` | Sum of all hit points (including power-up multiplied hits) |
 | `bossesDefeated × 50` | Boss kill bonus |
-| `souls × 2` | Soul bonus |
+| `objectiveBonus` | Up to **150** bonus points for completing the 3 run objectives |
 | `efficiency` | Hits per second — rewards fast, consistent play |
 | `max(efficiency, 0.01)` | Floor to prevent zero-score edge case |
 
@@ -320,7 +299,7 @@ Every 250 ms:
 ├── Check multiplier decay (>= 1000 ms idle, multiplier > 1)
 │   └── Reset multiplier to 1×
 ├── Check boss spawn (Date.now() >= bossSpawnTime, no current boss)
-│   └── spawnBoss()
+│   └── spawnBoss(elapsedMs) — picks boss by survived time, ramps requirement
 ├── Remove expired floating targets
 └── Check power-up expiry (Date.now() >= powerUpEndMs)
     └── Clear activePowerUp
@@ -345,7 +324,6 @@ Full initial state from `src/stores/useJourneyStore.js`:
 ```js
 {
   lives: 5,
-  souls: 0,
   difficulty: 'normal',
   journeyActive: false,
   journeyEnded: false,
@@ -362,12 +340,14 @@ Full initial state from `src/stores/useJourneyStore.js`:
   bossDefeatedAnimation: false,
   consecutivePerfects: 0,
   hitsWithoutMiss: 0,
+  bossHits: 0,
+  bossPowerUpsCollected: 0,
+  powerUpsCollected: 0,
   floatingTargets: [],
   targetIdCounter: 0,
   activePowerUp: null,
   powerUpEndMs: 0,
   shieldActive: false,
-  unlockedSpecialBosses: [],
   difficultySelected: false,
   finalScore: 0,
   efficiency: 0,
@@ -381,15 +361,15 @@ Full initial state from `src/stores/useJourneyStore.js`:
 | Action | Purpose |
 |---|---|
 | `setDifficulty(d)` | Set difficulty before starting |
-| `startJourney(ms)` | Reset state, mark active, set first boss spawn |
-| `journeyHit(ms, isPerfect, isNear)` | Score a hit, update multiplier/souls/streak |
+| `startJourney(ms)` | Reset state, mark active, set first boss spawn (15 s) |
+| `journeyHit(ms, isPerfect, isNear)` | Score a hit, update multiplier/streak, advance boss progress |
 | `journeyMiss()` | Handle miss — shield check, life deduction |
-| `endJourney(ms)` | Compute final score, mark ended |
-| `spawnBoss()` | Pick & set current boss (regular or special) |
-| `checkBossProgress(isPerfect, mult)` | Evaluate boss objective progress |
-| `defeatBoss()` | Apply boss rewards, schedule next spawn |
+| `endJourney(ms)` | Compute final score with objective bonuses, mark ended |
+| `spawnBoss(elapsedMs)` | Pick mini-boss by survived time, apply difficulty ramp |
+| `checkBossProgress(isPerfect, mult)` | Evaluate boss objective progress for all 4 types |
+| `defeatBoss()` | Apply boss rewards, schedule next spawn (15 s) |
 | `spawnFloatingTarget()` | Add a floating orb (if < 2 exist) |
-| `collectTarget(id, ms)` | Attempt power-up collection |
+| `collectTarget(id, ms)` | Attempt power-up collection, increment counters |
 | `removeExpiredTargets()` | GC expired floating targets |
 | `resetJourney()` | Full state reset |
 
@@ -411,27 +391,29 @@ Quick-reference for every constant you'd want to tweak:
 | Multiplier decay time | `JourneyMode.js` | Game loop interval | `1000` ms |
 | Inactivity penalty time | `JourneyMode.js` | Game loop interval | `5000` ms |
 | Game loop tick rate | `JourneyMode.js` | `setInterval` | `250` ms |
-| Boss spawn interval | `useJourneyStore.js` | `startJourney()` / `defeatBoss()` | `45 000 – 60 000` ms |
+| Boss spawn interval | `useJourneyStore.js` | `startJourney()` / `defeatBoss()` | `15 000` ms |
+| Boss difficulty ramp | `useJourneyStore.js` | `spawnBoss()` | `Math.floor(survivedSecs / 90)` |
+| Sentinel base requirement | `useJourneyStore.js` | `MINI_BOSSES[0].baseRequirement` | `3` perfects |
+| Bucky base requirement | `useJourneyStore.js` | `MINI_BOSSES[1].baseRequirement` | `4` hits |
+| Stone Golem base requirement | `useJourneyStore.js` | `MINI_BOSSES[2].baseRequirement` | `5` hit chain |
+| Chrono Dragon base requirement | `useJourneyStore.js` | `MINI_BOSSES[3].baseRequirement` | `3` power-ups |
+| Stone Golem / Chrono Dragon unlock | `useJourneyStore.js` | `MINI_BOSSES[2-3].minTime` | `60` s |
 | Boss defeat score bonus | `useJourneyStore.js` | `defeatBoss()` | `+50` |
-| Boss defeat soul bonus | `useJourneyStore.js` | `defeatBoss()` | `+5` |
 | Boss defeat mult bonus | `useJourneyStore.js` | `defeatBoss()` | `+1` (max 5) |
 | Boss defeat anim duration | `useJourneyStore.js` | `defeatBoss()` setTimeout | `2000` ms |
+| Objective: Power-ups | `useJourneyStore.js` | `OBJECTIVES[0].target` | `10` |
+| Objective: Hits | `useJourneyStore.js` | `OBJECTIVES[1].target` | `15` |
+| Objective: Bosses | `useJourneyStore.js` | `OBJECTIVES[2].target` | `4` |
+| Max objective bonus | `useJourneyStore.js` | `endJourney()` | `150` pts |
 | Target spawn interval | `JourneyMode.js` | Target spawn `useEffect` | `8 000 – 12 000` ms |
 | Max floating targets | `useJourneyStore.js` | `spawnFloatingTarget()` | `2` |
 | Target expiry | `useJourneyStore.js` | `spawnFloatingTarget()` | `6000` ms |
 | Target collect tolerance | `useJourneyStore.js` | `collectTarget()` | `cs <= 10 \|\| cs >= 90` |
 | 2× Points duration | `useJourneyStore.js` | `POWERUPS[0].duration` | `10 000` ms |
 | Shield duration | `useJourneyStore.js` | `POWERUPS[1].duration` | `15 000` ms |
-| Soul Magnet duration | `useJourneyStore.js` | `POWERUPS[2].duration` | `10 000` ms |
-| Soul Magnet gain | `useJourneyStore.js` | `journeyHit()` | `2` souls/hit |
-| Special boss chance | `useJourneyStore.js` | `spawnBoss()` | `40%` (`Math.random() < 0.4`) |
-| Phantom Lord threshold | `useJourneyStore.js` | `SPECIAL_BOSSES[0].soulThreshold` | `15` souls |
-| Lich King threshold | `useJourneyStore.js` | `SPECIAL_BOSSES[1].soulThreshold` | `30` souls |
-| Soul Reaper threshold | `useJourneyStore.js` | `SPECIAL_BOSSES[2].soulThreshold` | `50` souls |
 | Efficiency floor | `useJourneyStore.js` | `endJourney()` | `0.01` |
-| Soul bonus in final score | `useJourneyStore.js` | `endJourney()` | `× 2` per soul |
 | Boss bonus in final score | `useJourneyStore.js` | `endJourney()` | `× 50` per boss |
 
 ---
 
-*Last updated for the `useJourneyStore.js` / `JourneyMode.js` revision on the `cursor/journey-mode-documentation` branch.*
+*Last updated for the progressive mini-boss + objectives revision on the `cursor/journey-mini-boss-objectives-8216` branch.*

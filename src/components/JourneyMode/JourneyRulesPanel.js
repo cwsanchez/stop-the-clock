@@ -59,19 +59,19 @@ export default function JourneyRulesPanel() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 mt-0.5">🔮</span>
-                <span><strong className="text-blue-300">Floating orbs</strong> appear on sides — tap for power-ups (2×, shield, +souls)</span>
+                <span><strong className="text-blue-300">Floating orbs</strong> appear on sides — tap for power-ups (2×, shield)</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-amber-400 mt-0.5">👁️</span>
-                <span><strong className="text-amber-300">Bosses</strong> appear every 45-60s — complete their objective to defeat them</span>
+                <span><strong className="text-amber-300">Mini-bosses</strong> spawn every 15s — 4 types, difficulty ramps over time</span>
               </div>
               <div className="flex items-start gap-2">
-                <span className="text-purple-300 mt-0.5">👻</span>
-                <span>Collect <strong className="text-purple-300">souls</strong> — milestones unlock special bosses</span>
+                <span className="text-purple-300 mt-0.5">🎯</span>
+                <span><strong className="text-purple-300">Objectives</strong>: collect 10 power-ups, land 15 hits, defeat 4 bosses</span>
               </div>
               <div className="flex items-start gap-2 pt-1.5 border-t border-purple-500/10">
                 <span className="text-neon-green mt-0.5">🏆</span>
-                <span>Final score = (raw pts + boss bonus + soul bonus) × efficiency</span>
+                <span>Final score = (raw pts + boss bonus + objective bonus) × efficiency</span>
               </div>
             </div>
           </motion.div>

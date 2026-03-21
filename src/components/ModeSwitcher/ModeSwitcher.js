@@ -107,7 +107,7 @@ export default function ModeSwitcher() {
           animate={{ opacity: 1, y: 0 }}
           className="text-xs font-mono text-purple-400/70"
         >
-          5 lives — defeat bosses, collect souls, survive the journey! ⚔️
+          5 lives — defeat mini-bosses, complete objectives, survive the journey! ⚔️
         </motion.p>
       )}
     </motion.div>
