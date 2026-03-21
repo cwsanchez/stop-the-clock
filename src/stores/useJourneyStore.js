@@ -177,6 +177,8 @@ const useJourneyStore = create((set, get) => ({
     const survivedSecs = Math.max((currentElapsedMs - journeyStartMs) / 1000, 0);
 
     const available = MINI_BOSSES.filter(b => survivedSecs >= b.minTime);
+    if (available.length === 0) return; // No bosses available yet
+    
     const boss = available[Math.floor(Math.random() * available.length)];
 
     const ramp = survivedSecs >= 150 ? Math.floor((survivedSecs - 150) / 90) + 1 : 0;
