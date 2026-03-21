@@ -249,6 +249,22 @@ The boss defeat animation plays for **2 seconds** (confetti + spin-away), after 
 
 **Code ref:** `src/stores/useJourneyStore.js` → `MINI_BOSSES`, `spawnBoss()`, `checkBossProgress()`, `clickBossOrb()`, `defeatBoss()`
 
+### Special Bosses
+
+Each objective unlocks one specific special boss (queued). The boss is offered only after total playtime > 60 s AND > 30 s since the last special boss was defeated.
+
+| Objective | Special Boss | Effect |
+|---|---|---|
+| 20 Power-ups | **Phantom Lord** 👻 | Psychedelic background, hit .5 marks |
+| 30 Hits | **Lich King** 💀 | Scary distortion, 10 hits in a row |
+| 4 Mini-bosses | **Soul Reaper** ☠️ | Floating reaper orbs to destroy or lose life |
+
+You can accept up to **3** per run. **Accept** = ×3 multiplier for 60 s (big risk/reward). **Decline** = continue normally.
+
+Special boss state is tracked in `useJourneyStore`: `completedObjectives`, `pendingSpecialBosses`, `specialBossOffer`, `currentSpecialBoss`, `lastSpecialBossDefeatedTime`, `specialBossMultiplierEndMs`, `specialBossesAccepted`.
+
+**Code ref:** `src/stores/useJourneyStore.js` → `SPECIAL_BOSSES`, `checkObjectiveCompletion()`, `tryOfferSpecialBoss()`, `acceptSpecialBoss()`, `declineSpecialBoss()`
+
 ---
 
 ## 🎯 Run Objectives
@@ -257,9 +273,9 @@ Three run-wide objectives replace the old soul system. Progress bars are shown a
 
 | Objective | Target | Emoji |
 |---|---|---|
-| Collect power-ups | **10** | 🔮 |
-| Land hits | **15** | 🎯 |
-| Defeat bosses | **4** | ⚔️ |
+| Collect power-ups | **20** | 🔮 |
+| Land successful hits | **30** | 🎯 |
+| Defeat mini-bosses | **4** | ⚔️ |
 
 Each completed objective contributes **+50** to the final score calculation (max **+150** for all three). Partial progress contributes proportionally.
 
@@ -366,6 +382,14 @@ Full initial state from `src/stores/useJourneyStore.js`:
   efficiency: 0,
   totalSeconds: 0,
   lastInactivityPenaltyMs: 0,
+  // Special boss system
+  completedObjectives: {},
+  pendingSpecialBosses: [],
+  specialBossOffer: null,
+  currentSpecialBoss: null,
+  lastSpecialBossDefeatedTime: 0,
+  specialBossMultiplierEndMs: 0,
+  specialBossesAccepted: 0,
 }
 ```
 
@@ -387,6 +411,10 @@ Full initial state from `src/stores/useJourneyStore.js`:
 | `spawnFloatingTarget()` | Add a floating orb (if < 2 exist) |
 | `collectTarget(id, ms)` | Attempt power-up collection, increment counters |
 | `removeExpiredTargets()` | GC expired floating targets |
+| `checkObjectiveCompletion(id)` | Check if objective completed, queue special boss |
+| `tryOfferSpecialBoss(totalSecs)` | Show special boss offer if timing conditions met |
+| `acceptSpecialBoss()` | Accept offer → ×3 multiplier for 60 s + visual effects |
+| `declineSpecialBoss()` | Decline offer → continue normally |
 | `resetJourney()` | Full state reset |
 
 ---
@@ -418,8 +446,8 @@ Quick-reference for every constant you'd want to tweak:
 | Boss defeat score bonus | `useJourneyStore.js` | `defeatBoss()` | `+50` |
 | Boss defeat mult bonus | `useJourneyStore.js` | `defeatBoss()` | `+1` (max 5) |
 | Boss defeat anim duration | `useJourneyStore.js` | `defeatBoss()` setTimeout | `2000` ms |
-| Objective: Power-ups | `useJourneyStore.js` | `OBJECTIVES[0].target` | `10` |
-| Objective: Hits | `useJourneyStore.js` | `OBJECTIVES[1].target` | `15` |
+| Objective: Power-ups | `useJourneyStore.js` | `OBJECTIVES[0].target` | `20` |
+| Objective: Hits | `useJourneyStore.js` | `OBJECTIVES[1].target` | `30` |
 | Objective: Bosses | `useJourneyStore.js` | `OBJECTIVES[2].target` | `4` |
 | Max objective bonus | `useJourneyStore.js` | `endJourney()` | `150` pts |
 | Target spawn interval | `JourneyMode.js` | Target spawn `useEffect` | `8 000 – 12 000` ms |
