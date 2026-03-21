@@ -4,22 +4,24 @@ const MINI_BOSSES = [
   {
     id: 'sentinel', name: 'The Sentinel', emoji: '👁️',
     color: '#a855f7', bgColor: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.3)',
-    objective: 'chainPerfect', baseRequirement: 3, minTime: 0,
+    objective: 'chainHit', baseRequirement: 3, minTime: 15,
   },
   {
     id: 'bucky', name: 'Bucky', emoji: '🦌',
     color: '#10b981', bgColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)',
-    objective: 'iconCollect', baseRequirement: 4, minTime: 0,
+    objective: 'orbCollect', baseRequirement: 4, minTime: 15,
+    orbSpawnInterval: 2000, orbLifespan: 3000,
   },
   {
     id: 'golem', name: 'Stone Golem', emoji: '🗿',
     color: '#f59e0b', bgColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)',
-    objective: 'hitChain', baseRequirement: 5, minTime: 60,
+    objective: 'chainHit', baseRequirement: 6, minTime: 60,
   },
   {
     id: 'dragon', name: 'Chrono Dragon', emoji: '🐉',
     color: '#ef4444', bgColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)',
-    objective: 'powerUpCollect', baseRequirement: 3, minTime: 60,
+    objective: 'orbCollect', baseRequirement: 8, minTime: 60,
+    orbSpawnInterval: 1400, orbLifespan: 2100,
   },
 ];
 
@@ -36,10 +38,8 @@ const POWERUPS = [
 
 function getBossObjectiveDesc(boss, requirement) {
   switch (boss.objective) {
-    case 'chainPerfect': return `Chain ${requirement} perfect hits!`;
-    case 'iconCollect': return `Land ${requirement} hits!`;
-    case 'hitChain': return `Chain ${requirement} hits without missing!`;
-    case 'powerUpCollect': return `Collect ${requirement} power-ups!`;
+    case 'chainHit': return `Chain ${requirement} hits!`;
+    case 'orbCollect': return `Click ${requirement} orbs!`;
     default: return '';
   }
 }
@@ -64,6 +64,9 @@ const INITIAL_STATE = {
   hitsWithoutMiss: 0,
   bossHits: 0,
   bossPowerUpsCollected: 0,
+  bossOrbs: [],
+  bossOrbIdCounter: 0,
+  lastBossOrbSpawnTime: 0,
   powerUpsCollected: 0,
   floatingTargets: [],
   targetIdCounter: 0,
@@ -174,9 +177,11 @@ const useJourneyStore = create((set, get) => ({
     const survivedSecs = Math.max((currentElapsedMs - journeyStartMs) / 1000, 0);
 
     const available = MINI_BOSSES.filter(b => survivedSecs >= b.minTime);
+    if (available.length === 0) return; // No bosses available yet
+    
     const boss = available[Math.floor(Math.random() * available.length)];
 
-    const ramp = Math.floor(survivedSecs / 90);
+    const ramp = survivedSecs >= 150 ? Math.floor((survivedSecs - 150) / 90) + 1 : 0;
     const requirement = boss.baseRequirement + ramp;
 
     set({
@@ -190,31 +195,18 @@ const useJourneyStore = create((set, get) => ({
       bossPowerUpsCollected: 0,
       consecutivePerfects: 0,
       hitsWithoutMiss: 0,
+      bossOrbs: [],
+      lastBossOrbSpawnTime: 0,
     });
   },
 
   checkBossProgress: (isPerfect, currentMult) => {
-    const { currentBoss, consecutivePerfects, hitsWithoutMiss, bossHits, bossPowerUpsCollected } = get();
+    const { currentBoss, hitsWithoutMiss } = get();
     if (!currentBoss) return;
 
-    let progress = 0;
-    switch (currentBoss.objective) {
-      case 'chainPerfect':
-        progress = consecutivePerfects;
-        break;
-      case 'iconCollect':
-        progress = bossHits;
-        break;
-      case 'hitChain':
-        progress = hitsWithoutMiss;
-        break;
-      case 'powerUpCollect':
-        progress = bossPowerUpsCollected;
-        break;
-      default:
-        break;
-    }
+    if (currentBoss.objective === 'orbCollect') return;
 
+    const progress = hitsWithoutMiss;
     set({ bossProgress: progress });
 
     if (progress >= currentBoss.requirement) {
@@ -237,7 +229,7 @@ const useJourneyStore = create((set, get) => ({
     });
 
     setTimeout(() => {
-      set({ currentBoss: null, bossProgress: 0, bossDefeatedAnimation: false });
+      set({ currentBoss: null, bossProgress: 0, bossDefeatedAnimation: false, bossOrbs: [] });
     }, 2000);
   },
 
@@ -279,14 +271,6 @@ const useJourneyStore = create((set, get) => ({
         bossPowerUpsCollected: newBossPowerUps,
       });
 
-      const { currentBoss } = get();
-      if (currentBoss && currentBoss.objective === 'powerUpCollect') {
-        set({ bossProgress: newBossPowerUps });
-        if (newBossPowerUps >= currentBoss.requirement) {
-          setTimeout(() => get().defeatBoss(), 0);
-        }
-      }
-
       return target.powerUp;
     }
 
@@ -300,6 +284,48 @@ const useJourneyStore = create((set, get) => ({
     const filtered = floatingTargets.filter(t => now < t.expiresAt);
     if (filtered.length !== floatingTargets.length) {
       set({ floatingTargets: filtered });
+    }
+  },
+
+  spawnBossOrb: () => {
+    const { currentBoss, bossOrbs, bossOrbIdCounter } = get();
+    if (!currentBoss || currentBoss.objective !== 'orbCollect') return;
+
+    const lifespan = currentBoss.orbLifespan || 3000;
+    const x = 10 + Math.random() * 80;
+    const y = 20 + Math.random() * 50;
+
+    set({
+      bossOrbs: [
+        ...bossOrbs,
+        { id: bossOrbIdCounter, x, y, spawnTime: Date.now(), expiresAt: Date.now() + lifespan },
+      ],
+      bossOrbIdCounter: bossOrbIdCounter + 1,
+      lastBossOrbSpawnTime: Date.now(),
+    });
+  },
+
+  clickBossOrb: (orbId) => {
+    const { bossOrbs, bossProgress, currentBoss } = get();
+    if (!bossOrbs.find(o => o.id === orbId) || !currentBoss) return;
+
+    const newProgress = bossProgress + 1;
+    set({
+      bossOrbs: bossOrbs.filter(o => o.id !== orbId),
+      bossProgress: newProgress,
+    });
+
+    if (newProgress >= currentBoss.requirement) {
+      setTimeout(() => get().defeatBoss(), 0);
+    }
+  },
+
+  removeExpiredBossOrbs: () => {
+    const now = Date.now();
+    const { bossOrbs } = get();
+    const filtered = bossOrbs.filter(o => now < o.expiresAt);
+    if (filtered.length !== bossOrbs.length) {
+      set({ bossOrbs: filtered });
     }
   },
 

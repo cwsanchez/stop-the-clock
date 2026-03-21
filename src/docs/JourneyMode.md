@@ -171,7 +171,7 @@ const success = cs <= 10 || cs >= 90;
 | `doublePoints` | 2× Points | ⚡ | **10 s** | All hit points doubled |
 | `shield` | Shield | 🛡️ | **15 s** | Absorbs one miss (life saved) |
 
-Only **one** power-up can be active at a time. Collecting a new one replaces the current one. Each successful collection also increments the `powerUpsCollected` counter used by run objectives and the Chrono Dragon boss.
+Only **one** power-up can be active at a time. Collecting a new one replaces the current one. Each successful collection also increments the `powerUpsCollected` counter used by run objectives.
 
 **Code ref:** `src/stores/useJourneyStore.js` → `POWERUPS` array (top of file)
 
@@ -194,37 +194,47 @@ Bosses spawn every **15 seconds**. The first boss appears at **t = 15 s** after 
 
 | Boss | Emoji | Objective | Base Req | Available From |
 |---|---|---|---|---|
-| **The Sentinel** | 👁️ | `chainPerfect` — Chain N consecutive perfect :00 hits | **3** | 0 s |
-| **Bucky** | 🦌 | `iconCollect` — Land N total hits while boss is active | **4** | 0 s |
-| **Stone Golem** | 🗿 | `hitChain` — Chain N consecutive hits without missing | **5** | 60 s |
-| **Chrono Dragon** | 🐉 | `powerUpCollect` — Collect N power-ups while boss is active | **3** | 60 s |
+| **The Sentinel** | 👁️ | `chainHit` — 3 consecutive ANY successful hits (uses current mode tolerance) | **3** | 15 s |
+| **Stone Golem** | 🗿 | `chainHit` — 6 consecutive ANY successful hits | **6** | 60 s |
+| **Bucky** | 🦌 | `orbCollect` — Click 4 spawning orbs | **4** | 15 s |
+| **Chrono Dragon** | 🐉 | `orbCollect` — Click 8 spawning orbs (spawn/fade 30% faster) | **8** | 60 s |
+
+Sentinel & Bucky available from t=15s. Stone Golem & Chrono Dragon unlock at t=60s. Requirements ramp +1 every 90s after 150s.
 
 ### Phase-based Unlocking
 
 | Time Window | Available Bosses |
 |---|---|
-| **0 – 60 s** | Sentinel, Bucky |
+| **15 – 60 s** | Sentinel, Bucky |
 | **60 – 150 s** | All 4 bosses |
 | **150 s+** | All 4 bosses, requirements ramp |
 
 ### Progressive Difficulty Ramp
 
-After the run progresses, boss requirements increase:
+After the run reaches **150 s**, boss requirements increase by +1, then +1 more every 90 s:
 
 ```
-requirement = Math.floor(survivedSeconds / 90) + baseRequirement
+ramp = survivedSeconds >= 150 ? Math.floor((survivedSeconds - 150) / 90) + 1 : 0
+requirement = baseRequirement + ramp
 ```
 
-Example for Sentinel (base 3): 0–89 s → 3, 90–179 s → 4, 180–269 s → 5, …
+Example for Sentinel (base 3): 0–149 s → 3, 150–239 s → 4, 240–329 s → 5, …
 
 ### Objective Mechanics
 
 | Objective | Tracked by | Reset behaviour |
 |---|---|---|
-| `chainPerfect` | `consecutivePerfects` | Resets to 0 on any non-perfect hit; resets on boss spawn |
-| `iconCollect` | `bossHits` | Resets on boss spawn (total hits during this boss fight) |
-| `hitChain` | `hitsWithoutMiss` | Resets to 0 on any miss; resets on boss spawn |
-| `powerUpCollect` | `bossPowerUpsCollected` | Resets on boss spawn (power-ups collected during this boss fight) |
+| `chainHit` | `hitsWithoutMiss` | Resets to 0 on any miss; resets on boss spawn |
+| `orbCollect` | `bossProgress` (orb clicks) | Resets on boss spawn; each clicked orb increments by 1 |
+
+### Orb-Click Bosses (Bucky & Chrono Dragon)
+
+When an `orbCollect` boss is active, glowing orbs spawn at random positions on the play area. Click an orb to score one point of boss progress.
+
+| Property | Bucky | Chrono Dragon |
+|---|---|---|
+| Spawn interval | **2 000 ms** | **1 400 ms** (30% faster) |
+| Orb lifespan | **3 000 ms** | **2 100 ms** (30% faster) |
 
 ### Boss Defeat Rewards
 
@@ -237,7 +247,7 @@ When `progress >= requirement`:
 
 The boss defeat animation plays for **2 seconds** (confetti + spin-away), after which the boss clears and the next spawn timer starts.
 
-**Code ref:** `src/stores/useJourneyStore.js` → `MINI_BOSSES`, `spawnBoss()`, `checkBossProgress()`, `defeatBoss()`
+**Code ref:** `src/stores/useJourneyStore.js` → `MINI_BOSSES`, `spawnBoss()`, `checkBossProgress()`, `clickBossOrb()`, `defeatBoss()`
 
 ---
 
@@ -342,6 +352,9 @@ Full initial state from `src/stores/useJourneyStore.js`:
   hitsWithoutMiss: 0,
   bossHits: 0,
   bossPowerUpsCollected: 0,
+  bossOrbs: [],
+  bossOrbIdCounter: 0,
+  lastBossOrbSpawnTime: 0,
   powerUpsCollected: 0,
   floatingTargets: [],
   targetIdCounter: 0,
@@ -366,8 +379,11 @@ Full initial state from `src/stores/useJourneyStore.js`:
 | `journeyMiss()` | Handle miss — shield check, life deduction |
 | `endJourney(ms)` | Compute final score with objective bonuses, mark ended |
 | `spawnBoss(elapsedMs)` | Pick mini-boss by survived time, apply difficulty ramp |
-| `checkBossProgress(isPerfect, mult)` | Evaluate boss objective progress for all 4 types |
+| `checkBossProgress(isPerfect, mult)` | Evaluate boss objective progress for chainHit bosses |
 | `defeatBoss()` | Apply boss rewards, schedule next spawn (15 s) |
+| `spawnBossOrb()` | Add a clickable boss orb for orbCollect bosses |
+| `clickBossOrb(id)` | Handle boss orb click, increment progress |
+| `removeExpiredBossOrbs()` | GC expired boss orbs |
 | `spawnFloatingTarget()` | Add a floating orb (if < 2 exist) |
 | `collectTarget(id, ms)` | Attempt power-up collection, increment counters |
 | `removeExpiredTargets()` | GC expired floating targets |
@@ -392,11 +408,12 @@ Quick-reference for every constant you'd want to tweak:
 | Inactivity penalty time | `JourneyMode.js` | Game loop interval | `5000` ms |
 | Game loop tick rate | `JourneyMode.js` | `setInterval` | `250` ms |
 | Boss spawn interval | `useJourneyStore.js` | `startJourney()` / `defeatBoss()` | `15 000` ms |
-| Boss difficulty ramp | `useJourneyStore.js` | `spawnBoss()` | `Math.floor(survivedSecs / 90)` |
-| Sentinel base requirement | `useJourneyStore.js` | `MINI_BOSSES[0].baseRequirement` | `3` perfects |
-| Bucky base requirement | `useJourneyStore.js` | `MINI_BOSSES[1].baseRequirement` | `4` hits |
-| Stone Golem base requirement | `useJourneyStore.js` | `MINI_BOSSES[2].baseRequirement` | `5` hit chain |
-| Chrono Dragon base requirement | `useJourneyStore.js` | `MINI_BOSSES[3].baseRequirement` | `3` power-ups |
+| Boss difficulty ramp | `useJourneyStore.js` | `spawnBoss()` | `+1 every 90 s after 150 s` |
+| Sentinel base requirement | `useJourneyStore.js` | `MINI_BOSSES[0].baseRequirement` | `3` hits |
+| Bucky base requirement | `useJourneyStore.js` | `MINI_BOSSES[1].baseRequirement` | `4` orbs |
+| Stone Golem base requirement | `useJourneyStore.js` | `MINI_BOSSES[2].baseRequirement` | `6` hits |
+| Chrono Dragon base requirement | `useJourneyStore.js` | `MINI_BOSSES[3].baseRequirement` | `8` orbs |
+| Sentinel / Bucky unlock | `useJourneyStore.js` | `MINI_BOSSES[0-1].minTime` | `15` s |
 | Stone Golem / Chrono Dragon unlock | `useJourneyStore.js` | `MINI_BOSSES[2-3].minTime` | `60` s |
 | Boss defeat score bonus | `useJourneyStore.js` | `defeatBoss()` | `+50` |
 | Boss defeat mult bonus | `useJourneyStore.js` | `defeatBoss()` | `+1` (max 5) |
@@ -416,4 +433,4 @@ Quick-reference for every constant you'd want to tweak:
 
 ---
 
-*Last updated for the progressive mini-boss + objectives revision on the `cursor/journey-mini-boss-objectives-8216` branch.*
+*Last updated for the any-hit chain + orb-click boss revision on the `cursor/journey-mode-boss-mechanics-6855` branch.*
