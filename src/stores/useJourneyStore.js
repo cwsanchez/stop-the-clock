@@ -103,6 +103,10 @@ const INITIAL_STATE = {
   lastSpecialBossDefeatedTime: 0,
   specialBossMultiplierEndMs: 0,
   specialBossesAccepted: 0,
+  forceHalfSecond: false,
+  specialBossStreak: 0,
+  reaperOrbs: [],
+  reaperOrbIdCounter: 0,
 };
 
 const useJourneyStore = create((set, get) => ({
@@ -150,13 +154,21 @@ const useJourneyStore = create((set, get) => ({
       setTimeout(() => get().checkBossProgress(isPerfect, newMultiplier), 0);
     }
 
+    if (state.currentSpecialBoss?.id === 'lichKing') {
+      const newStreak = (state.specialBossStreak || 0) + 1;
+      set({ specialBossStreak: newStreak });
+      if (newStreak >= 10) {
+        setTimeout(() => get().defeatSpecialBoss(), 0);
+      }
+    }
+
     setTimeout(() => get().checkObjectiveCompletion('hits'), 0);
 
     return { points, newMultiplier, oldMultiplier: state.currentMultiplier };
   },
 
   journeyMiss: () => {
-    const { lives, shieldActive, activePowerUp, powerUpEndMs } = get();
+    const { lives, shieldActive, activePowerUp, powerUpEndMs, currentSpecialBoss } = get();
     const now = Date.now();
     const shieldUp = shieldActive || (activePowerUp === 'shield' && now < powerUpEndMs);
 
@@ -172,6 +184,7 @@ const useJourneyStore = create((set, get) => ({
       perfectStreak: 0,
       consecutivePerfects: 0,
       hitsWithoutMiss: 0,
+      ...(currentSpecialBoss?.id === 'lichKing' ? { specialBossStreak: 0 } : {}),
     });
     return { shielded: false, livesRemaining: newLives };
   },
@@ -395,13 +408,25 @@ const useJourneyStore = create((set, get) => ({
     const state = get();
     if (!state.specialBossOffer) return;
 
+    const extra = {};
+    if (state.specialBossOffer.id === 'phantomLord') {
+      extra.forceHalfSecond = true;
+    } else if (state.specialBossOffer.id === 'lichKing') {
+      extra.specialBossStreak = 0;
+    }
+
     set({
       currentSpecialBoss: state.specialBossOffer,
       specialBossOffer: null,
       pendingSpecialBosses: state.pendingSpecialBosses.slice(1),
       specialBossMultiplierEndMs: Date.now() + 60000,
       specialBossesAccepted: state.specialBossesAccepted + 1,
+      ...extra,
     });
+
+    if (state.specialBossOffer.id === 'soulReaper') {
+      setTimeout(() => get().spawnReaperOrbs(), 0);
+    }
   },
 
   declineSpecialBoss: () => {
@@ -410,6 +435,52 @@ const useJourneyStore = create((set, get) => ({
       specialBossOffer: null,
       pendingSpecialBosses: state.pendingSpecialBosses.slice(1),
     });
+  },
+
+  defeatSpecialBoss: () => {
+    const state = get();
+    if (!state.currentSpecialBoss) return;
+    set({
+      currentSpecialBoss: null,
+      specialBossMultiplierEndMs: 0,
+      lastSpecialBossDefeatedTime: Date.now(),
+      forceHalfSecond: false,
+      specialBossStreak: 0,
+      reaperOrbs: [],
+    });
+  },
+
+  spawnReaperOrbs: () => {
+    const { reaperOrbIdCounter } = get();
+    const count = 2 + Math.floor(Math.random() * 2);
+    const now = Date.now();
+    const orbs = [];
+    for (let i = 0; i < count; i++) {
+      orbs.push({
+        id: reaperOrbIdCounter + i,
+        x: 15 + Math.random() * 70,
+        y: 20 + Math.random() * 50,
+        spawnTime: now,
+        expiresAt: now + 8000,
+      });
+    }
+    set({ reaperOrbs: orbs, reaperOrbIdCounter: reaperOrbIdCounter + count });
+  },
+
+  clickReaperOrb: (orbId) => {
+    const { reaperOrbs } = get();
+    set({ reaperOrbs: reaperOrbs.filter(o => o.id !== orbId) });
+  },
+
+  removeExpiredReaperOrbs: () => {
+    const now = Date.now();
+    const { reaperOrbs, lives } = get();
+    const expired = reaperOrbs.filter(o => now >= o.expiresAt);
+    if (expired.length === 0) return 0;
+    const remaining = reaperOrbs.filter(o => now < o.expiresAt);
+    const newLives = Math.max(lives - expired.length, 0);
+    set({ reaperOrbs: remaining, lives: newLives });
+    return expired.length;
   },
 
   resetJourney: () => set({ ...INITIAL_STATE }),
