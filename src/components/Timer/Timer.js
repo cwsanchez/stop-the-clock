@@ -1,40 +1,8 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import useTimerStore from '../../stores/useTimerStore';
 import useGameStore from '../../stores/useGameStore';
 import { formatTime } from '../../utils/formatTime';
-
-function TimerDigit({ value, label }) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="relative overflow-hidden">
-        <AnimatePresence mode="popLayout">
-          <motion.span
-            key={value}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.1 }}
-            className="inline-block tabular-nums"
-          >
-            {value}
-          </motion.span>
-        </AnimatePresence>
-      </div>
-      <span className="text-xs text-gray-500 uppercase tracking-widest mt-1 font-mono">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function TimerSeparator({ colorClass }) {
-  return (
-    <span className={`text-4xl sm:text-5xl md:text-6xl font-display mx-1 self-start mt-1 ${colorClass}`}>
-      :
-    </span>
-  );
-}
 
 function WeenieBadge() {
   return (
@@ -66,7 +34,7 @@ function FeverBadge({ multiplier }) {
         rotate: [-5, 5, -3, 3, 0],
       }}
       transition={{
-        duration: isMax ? 0.5 : 0.5,
+        duration: 0.5,
         scale: isMax ? { repeat: Infinity, duration: 0.4 } : undefined,
       }}
       className="absolute -top-4 -right-4 sm:-top-6 sm:-right-8 z-20"
@@ -89,31 +57,23 @@ function FeverBadge({ multiplier }) {
   );
 }
 
-function getFeverTimerColor(phase, multiplier) {
+function getFeverTimerStyle(phase, multiplier) {
   if (phase === 'stopped-fail') {
-    return 'text-red-500 drop-shadow-[0_0_20px_rgba(255,50,50,0.5)]';
+    return { color: '#ef4444', textShadow: '0 0 20px rgba(255,50,50,0.5)' };
   }
-
   if (multiplier >= 4) {
-    return 'text-red-400 text-shadow-fever-inferno';
+    return { color: '#f87171', textShadow: '0 0 25px rgba(255,0,100,0.9), 0 0 60px rgba(255,34,0,0.7), 0 0 100px rgba(255,0,68,0.5), 0 0 150px rgba(255,140,0,0.3)' };
   }
   if (multiplier >= 3) {
-    return 'text-orange-400 text-shadow-fever-fire';
+    return { color: '#fb923c', textShadow: '0 0 20px rgba(255,0,68,0.8), 0 0 60px rgba(255,68,0,0.5), 0 0 100px rgba(255,0,68,0.3)' };
   }
   if (multiplier >= 2) {
-    return 'text-orange-300 text-shadow-fever-hot';
+    return { color: '#fdba74', textShadow: '0 0 15px rgba(255,68,0,0.7), 0 0 50px rgba(255,68,0,0.4), 0 0 80px rgba(255,0,68,0.2)' };
   }
   if (multiplier >= 1.5) {
-    return 'text-yellow-400 text-shadow-fever-warm';
+    return { color: '#facc15', textShadow: '0 0 10px rgba(255,149,0,0.6), 0 0 40px rgba(255,149,0,0.3)' };
   }
-  return 'text-red-400 drop-shadow-[0_0_20px_rgba(255,68,0,0.4)]';
-}
-
-function getFeverSeparatorColor(multiplier) {
-  if (multiplier >= 4) return 'text-red-400/60';
-  if (multiplier >= 3) return 'text-orange-400/50';
-  if (multiplier >= 2) return 'text-orange-300/40';
-  return 'text-red-400/40';
+  return { color: '#f87171', textShadow: '0 0 20px rgba(255,68,0,0.4)' };
 }
 
 export default function Timer() {
@@ -124,47 +84,37 @@ export default function Timer() {
   const isFever = mode === 'fever';
   const multiplier = currentMultiplier;
 
-  const getTimerColor = () => {
+  const getTimerStyle = () => {
     if (isFever && (feverRunActive || phase === 'running')) {
-      return getFeverTimerColor(phase, multiplier);
+      return getFeverTimerStyle(phase, multiplier);
     }
 
     switch (phase) {
       case 'stopped-success':
         return isWeenie
-          ? 'text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.5)]'
+          ? { color: '#fbbf24', textShadow: '0 0 20px rgba(251,191,36,0.5)' }
           : isFever
-            ? 'text-red-400 drop-shadow-[0_0_20px_rgba(255,68,0,0.5)]'
-            : 'text-neon-green drop-shadow-[0_0_20px_rgba(57,255,20,0.5)]';
+            ? { color: '#f87171', textShadow: '0 0 20px rgba(255,68,0,0.5)' }
+            : { color: '#39ff14', textShadow: '0 0 20px rgba(57,255,20,0.5)' };
       case 'stopped-fail':
-        return 'text-red-500 drop-shadow-[0_0_20px_rgba(255,50,50,0.5)]';
+        return { color: '#ef4444', textShadow: '0 0 20px rgba(255,50,50,0.5)' };
       case 'running':
         return isWeenie
-          ? 'text-amber-300 drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]'
+          ? { color: '#fcd34d', textShadow: '0 0 20px rgba(251,191,36,0.4)' }
           : isFever
-            ? getFeverTimerColor('running', multiplier)
-            : 'text-neon-cyan drop-shadow-[0_0_20px_rgba(0,240,255,0.4)]';
+            ? getFeverTimerStyle('running', multiplier)
+            : { color: '#00f0ff', textShadow: '0 0 20px rgba(0,240,255,0.4)' };
       default:
         return isWeenie
-          ? 'text-amber-400/70'
+          ? { color: 'rgba(251,191,36,0.7)' }
           : isFever
-            ? 'text-red-400/70'
-            : 'text-neon-cyan/70';
+            ? { color: 'rgba(248,113,113,0.7)' }
+            : { color: 'rgba(0,240,255,0.7)' };
     }
   };
 
-  const getSeparatorColor = () => {
-    if (isFever && feverRunActive) return getFeverSeparatorColor(multiplier);
-    if (isWeenie) return 'text-amber-400/40';
-    if (isFever) return 'text-red-400/40';
-    return 'text-neon-cyan/40';
-  };
-
-  const timerSizeClass = isFever && feverRunActive && multiplier >= 3
-    ? 'text-7xl sm:text-8xl md:text-9xl lg:text-[10rem]'
-    : 'text-6xl sm:text-7xl md:text-8xl lg:text-9xl';
-
   const shakeIntensity = isFever && feverRunActive && multiplier >= 4;
+  const enlarged = isFever && feverRunActive && multiplier >= 3;
 
   return (
     <motion.div
@@ -195,39 +145,17 @@ export default function Timer() {
       </div>
 
       <div
-        className={`flex items-baseline justify-center font-display ${timerSizeClass} tracking-tight transition-all duration-300 ${getTimerColor()}`}
+        className="flex items-baseline justify-center font-display tracking-tight transition-all duration-300"
+        style={{
+          fontSize: enlarged ? 'clamp(4rem, 12vw, 10rem)' : 'clamp(3.5rem, 10vw, 8rem)',
+          ...getTimerStyle(),
+        }}
       >
-        <TimerDigit value={minutes} label="min" />
-        <TimerSeparator colorClass={getSeparatorColor()} />
-        <TimerDigit value={seconds} label="sec" />
-        <TimerSeparator colorClass={getSeparatorColor()} />
-        <motion.div
-          className="flex flex-col items-center"
-          animate={
-            phase === 'stopped-success'
-              ? { scale: [1, 1.2, 1] }
-              : {}
-          }
-          transition={{ duration: 0.3 }}
-        >
-          <div className="relative overflow-hidden">
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={centiseconds}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -20, opacity: 0 }}
-                transition={{ duration: 0.1 }}
-                className="inline-block tabular-nums"
-              >
-                {centiseconds}
-              </motion.span>
-            </AnimatePresence>
-          </div>
-          <span className="text-xs text-gray-500 uppercase tracking-widest mt-1 font-mono">
-            cs
-          </span>
-        </motion.div>
+        <span className="tabular-nums">{minutes}</span>
+        <span className="mx-1 opacity-40">:</span>
+        <span className="tabular-nums">{seconds}</span>
+        <span className="mx-1 opacity-40">:</span>
+        <span className="tabular-nums">{centiseconds}</span>
       </div>
 
       {phase === 'running' && !isFever && (
