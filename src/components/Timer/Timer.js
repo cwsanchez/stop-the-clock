@@ -165,21 +165,22 @@ export default function Timer() {
     : 'text-6xl sm:text-7xl md:text-8xl lg:text-9xl';
 
   const shakeIntensity = isFever && feverRunActive && multiplier >= 4;
+  const isFailShake = phase === 'stopped-fail' && !isFever;
 
   return (
     <motion.div
       className="relative select-none"
       animate={
-        phase === 'stopped-fail' && !isFever
-          ? { x: [0, -6, 6, -4, 4, 0] }
+        isFailShake
+          ? { x: [0, -1.5, 1.5, -1.5, 1.5, 0] }
           : shakeIntensity
-            ? { x: [0, -1, 1, -1, 1, 0] }
+            ? { x: [0, -1.5, 1.5, -1.5, 1.5, 0] }
             : {}
       }
       transition={
         shakeIntensity
-          ? { duration: 0.15, repeat: Infinity }
-          : { duration: 0.4 }
+          ? { duration: 0.06, repeat: Infinity }
+          : { duration: 0.06 }
       }
     >
       {isWeenie && <WeenieBadge />}
@@ -206,9 +207,17 @@ export default function Timer() {
           animate={
             phase === 'stopped-success'
               ? { scale: [1, 1.2, 1] }
-              : {}
+              : (isFailShake || shakeIntensity)
+                ? { x: [0, 0.75, -0.75, 0.75, -0.75, 0] }
+                : {}
           }
-          transition={{ duration: 0.3 }}
+          transition={
+            phase === 'stopped-success'
+              ? { duration: 0.3 }
+              : shakeIntensity
+                ? { duration: 0.06, repeat: Infinity }
+                : { duration: 0.06 }
+          }
         >
           <div className="relative overflow-hidden">
             <AnimatePresence mode="popLayout">
