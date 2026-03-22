@@ -669,10 +669,12 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     bossSpawnTime, lastInactivityPenaltyMs, powerUpsCollected,
     bossOrbs,
     specialBossOffer, currentSpecialBoss, specialBossMultiplierEndMs,
+    forceHalfSecond, reaperOrbs,
     startJourney, journeyHit, journeyMiss, endJourney,
     spawnBoss, spawnFloatingTarget, collectTarget, removeExpiredTargets,
     spawnBossOrb, clickBossOrb, removeExpiredBossOrbs,
     tryOfferSpecialBoss, acceptSpecialBoss, declineSpecialBoss,
+    clickReaperOrb, removeExpiredReaperOrbs, spawnReaperOrbs,
     resetJourney,
   } = useJourneyStore();
   const { user } = useAuthStore();
@@ -776,11 +778,29 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
         useJourneyStore.setState({ activePowerUp: null, powerUpEndMs: 0, shieldActive: false });
       }
 
+      if (jState.currentSpecialBoss?.id === 'soulReaper') {
+        const lostCount = jState.removeExpiredReaperOrbs();
+        if (lostCount > 0) {
+          const updated = useJourneyStore.getState();
+          if (updated.lives <= 0) {
+            handleJourneyEnd(tState.elapsedMs);
+            return;
+          }
+        }
+        const reaperState = useJourneyStore.getState();
+        if (reaperState.reaperOrbs.length === 0 && reaperState.currentSpecialBoss?.id === 'soulReaper') {
+          reaperState.spawnReaperOrbs();
+        }
+      }
+
       if (jState.currentSpecialBoss && Date.now() >= jState.specialBossMultiplierEndMs) {
         useJourneyStore.setState({
           currentSpecialBoss: null,
           specialBossMultiplierEndMs: 0,
           lastSpecialBossDefeatedTime: Date.now(),
+          forceHalfSecond: false,
+          specialBossStreak: 0,
+          reaperOrbs: [],
         });
       }
 
@@ -841,8 +861,14 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     const currentMs = useTimerStore.getState().elapsedMs;
     const cs = Math.floor(currentMs / 10) % 100;
     const tolerance = getTolerance();
-    const isPerfect = cs === 0;
-    const isNearHit = cs <= tolerance || cs >= (100 - tolerance);
+
+    const jSnap = useJourneyStore.getState();
+    const phantomActive = jSnap.currentSpecialBoss?.id === 'phantomLord' && jSnap.forceHalfSecond;
+
+    const isPerfect = phantomActive ? cs === 50 : cs === 0;
+    const isNearHit = phantomActive
+      ? Math.abs(cs - 50) <= tolerance
+      : cs <= tolerance || cs >= (100 - tolerance);
 
     if (!isPerfect && !isNearHit) {
       const result = journeyMiss();
@@ -906,6 +932,10 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
     }
   }, [clickBossOrb, playBossDefeat]);
 
+  const handleClickReaperOrb = useCallback((orbId) => {
+    clickReaperOrb(orbId);
+  }, [clickReaperOrb]);
+
   const handleReset = useCallback(() => {
     resetJourney();
     resetTimerLoop();
@@ -949,6 +979,21 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
       <SpecialBossEffects boss={currentSpecialBoss} />
       <SpecialMultiplierBanner boss={currentSpecialBoss} endMs={specialBossMultiplierEndMs} />
 
+      {currentSpecialBoss?.id === 'phantomLord' && forceHalfSecond && (
+        <div
+          className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-full border"
+          style={{
+            background: 'rgba(232,121,249,0.15)',
+            borderColor: 'rgba(232,121,249,0.4)',
+            animation: 'journey-pulse 0.6s ease-in-out infinite',
+          }}
+        >
+          <span className="text-xs font-display uppercase tracking-[0.2em] text-fuchsia-300">
+            ⚠️ TARGET: .50 ⚠️
+          </span>
+        </div>
+      )}
+
       <JourneyRulesPanel />
 
       {/* HUD Top Bar */}
@@ -986,6 +1031,34 @@ export default function JourneyMode({ onSubmit, resetTimerLoop }) {
           lifespan={currentBoss.orbLifespan || 3000}
           onClick={handleClickBossOrb}
         />
+      ))}
+
+      {/* Reaper Orbs (Soul Reaper special boss) */}
+      {currentSpecialBoss?.id === 'soulReaper' && reaperOrbs.map(o => (
+        <motion.button
+          key={o.id}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0 }}
+          transition={{ duration: 0.25 }}
+          onClick={() => handleClickReaperOrb(o.id)}
+          className="reaper-orb absolute z-30 cursor-pointer"
+          style={{
+            left: `${o.x}%`,
+            top: `${o.y}%`,
+          }}
+        >
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center border-2 hover:scale-125 transition-transform"
+            style={{
+              background: 'radial-gradient(circle, rgba(248,113,113,0.5), rgba(248,113,113,0.15))',
+              borderColor: 'rgba(248,113,113,0.9)',
+              boxShadow: '0 0 18px rgba(248,113,113,0.6), 0 0 36px rgba(248,113,113,0.3)',
+            }}
+          >
+            <span className="text-xl">☠️</span>
+          </div>
+        </motion.button>
       ))}
 
       {/* Center: Timer + Message + Controls */}
