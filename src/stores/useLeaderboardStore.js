@@ -73,10 +73,17 @@ const useLeaderboardStore = create((set, get) => ({
   loading: false,
   lastSubmitTime: 0,
   activeLeaderboardTab: 'classic',
+  period: 'all-time',
   nextResetTime: getNextResetTime(),
   timeUntilReset: formatTimeUntilReset(),
 
   setActiveLeaderboardTab: (tab) => set({ activeLeaderboardTab: tab }),
+
+  setPeriod: (period) => {
+    set({ period });
+    get().clearLeaderboards();
+    get().fetchAllLeaderboards();
+  },
 
   clearLeaderboards: () =>
     set({ classicLeaderboard: [], weenieLeaderboard: [], feverLeaderboard: [], journeyLeaderboard: [] }),
@@ -84,13 +91,23 @@ const useLeaderboardStore = create((set, get) => ({
   fetchLeaderboard: async (mode) => {
     set({ loading: true });
 
-    const doQuery = () =>
-      supabase
-        .from('leaderboard_daily')
-        .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
-        .eq('mode', mode)
-        .order('high_score', { ascending: false })
-        .limit(50);
+    const { period } = get();
+
+    const doQuery = period === 'daily'
+      ? () =>
+          supabase
+            .from('leaderboard_daily')
+            .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
+            .eq('mode', mode)
+            .order('high_score', { ascending: false })
+            .limit(50)
+      : () =>
+          supabase
+            .from('scores')
+            .select('high_score, best_streak, updated_at, mode, user_id, profiles(display_name)')
+            .eq('mode', mode)
+            .order('high_score', { ascending: false })
+            .limit(50);
 
     const { data, error } = await withRetry(doQuery);
 

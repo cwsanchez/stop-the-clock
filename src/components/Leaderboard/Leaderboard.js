@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Flame, Baby, Zap, Swords, Clock } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import useLeaderboardStore from '../../stores/useLeaderboardStore';
 import useAuthStore from '../../stores/useAuthStore';
 
@@ -38,6 +39,7 @@ export default function Leaderboard({ iconsOnly = false }) {
     classicLeaderboard, weenieLeaderboard, feverLeaderboard, journeyLeaderboard,
     loading,
     activeLeaderboardTab, setActiveLeaderboardTab,
+    period, setPeriod,
   } = useLeaderboardStore();
   const { profile } = useAuthStore();
 
@@ -74,14 +76,22 @@ export default function Leaderboard({ iconsOnly = false }) {
         <h2 className="text-sm font-display uppercase tracking-widest text-gray-300">
           Leaderboard
         </h2>
-        <span className="text-xs text-gray-600 font-mono ml-auto">
-          Daily
-        </span>
+        <ToggleGroup
+          type="single"
+          value={period}
+          onValueChange={(val) => { if (val) setPeriod(val); }}
+          className="ml-auto"
+        >
+          <ToggleGroupItem value="all-time">All Time</ToggleGroupItem>
+          <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      <div className="flex justify-end mb-3">
-        <DailyCountdown />
-      </div>
+      {period === 'daily' && (
+        <div className="flex justify-end mb-3">
+          <DailyCountdown />
+        </div>
+      )}
 
       <div className="flex gap-1 mb-4 bg-dark-900/50 rounded-xl p-1">
         {TABS.map(({ key, label, icon: Icon, activeClass }) => (
@@ -110,7 +120,7 @@ export default function Leaderboard({ iconsOnly = false }) {
       ) : leaderboard.length === 0 ? (
         <div className="text-center py-8 text-gray-600 text-sm font-mono">
           <Medal size={24} className="mx-auto mb-2 opacity-50" />
-          No scores yet. Be the first!
+          {period === 'daily' ? 'No scores today. Be the first!' : 'No scores yet. Be the first!'}
         </div>
       ) : (
         <div className="space-y-1 max-h-80 overflow-y-auto pr-1 scrollbar-thin">
