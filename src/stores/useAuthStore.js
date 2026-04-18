@@ -1,5 +1,17 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, checkAndRecoverHealth } from '../lib/supabaseClient';
+
+const INIT_TIMEOUT_MS = 5_000;
+
+function withTimeout(promise, ms) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('auth-init-timeout')), ms);
+  });
+  return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() =>
+    clearTimeout(timeoutId),
+  );
+}
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -12,7 +24,23 @@ const useAuthStore = create((set, get) => ({
   clearError: () => set({ authError: null }),
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    let session = null;
+    try {
+      const result = await withTimeout(supabase.auth.getSession(), INIT_TIMEOUT_MS);
+      session = result?.data?.session || null;
+    } catch (_) {
+      // A timeout at boot means the persisted client state is already
+      // bad (e.g. reload landed in a zombie auth lock). Rebuild and
+      // try one more time.
+      await checkAndRecoverHealth('auth-init');
+      try {
+        const retry = await withTimeout(supabase.auth.getSession(), INIT_TIMEOUT_MS);
+        session = retry?.data?.session || null;
+      } catch (_) {
+        session = null;
+      }
+    }
+
     if (session?.user) {
       const profile = await get().fetchProfile(session.user.id);
       set({ user: session.user, profile, loading: false });
@@ -20,6 +48,9 @@ const useAuthStore = create((set, get) => ({
       set({ loading: false });
     }
 
+    // `onAuthStateChange` goes through our Proxy — the registered
+    // listener is re-bound automatically every time the client is
+    // recreated, so this only needs to be called once.
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await get().fetchProfile(session.user.id);
