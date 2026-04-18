@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, LogOut, User, Ghost } from 'lucide-react';
+import { LogIn, LogOut, User, Ghost, Pencil } from 'lucide-react';
 import useAuthStore from '../../stores/useAuthStore';
+import ProfileModal from '../ProfileModal/ProfileModal';
 
 export default function UserHeader() {
   const { user, profile, signOut, setShowAuthModal } = useAuthStore();
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <div className="flex items-center gap-2">
@@ -17,12 +19,19 @@ export default function UserHeader() {
             exit={{ opacity: 0, x: -10 }}
             className="flex items-center gap-2"
           >
-            <div className="flex items-center gap-2 px-3 py-2 bg-dark-700 border border-neon-cyan/20 rounded-lg">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowProfile(true)}
+              title="Edit display name"
+              className="group flex items-center gap-2 px-3 py-2 bg-dark-700 border border-neon-cyan/20 rounded-lg hover:border-neon-cyan/50 transition-colors"
+            >
               <User size={14} className="text-neon-cyan" />
               <span className="text-sm font-mono text-neon-cyan truncate max-w-[120px]">
                 {profile?.display_name || user.email?.split('@')[0]}
               </span>
-            </div>
+              <Pencil size={12} className="text-neon-cyan/50 group-hover:text-neon-cyan transition-colors" />
+            </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -56,6 +65,7 @@ export default function UserHeader() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
     </div>
   );
 }
