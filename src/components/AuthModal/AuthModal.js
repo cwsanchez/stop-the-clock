@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { X, Mail, Lock, User, LogIn, UserPlus, Loader2, CheckCircle2 } from 'lucide-react';
 import useAuthStore from '../../stores/useAuthStore';
 
 export default function AuthModal() {
@@ -10,11 +10,13 @@ export default function AuthModal() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
 
   const resetForm = () => {
     setEmail('');
     setPassword('');
     setDisplayName('');
+    setSignUpSuccess(false);
     clearError();
   };
 
@@ -32,7 +34,10 @@ export default function AuthModal() {
     e.preventDefault();
     setSubmitting(true);
     if (isSignUp) {
-      await signUp(email, password, displayName || email.split('@')[0]);
+      const result = await signUp(email, password, displayName);
+      if (result && result.ok && result.needsConfirmation) {
+        setSignUpSuccess(true);
+      }
     } else {
       await signIn(email, password);
     }
@@ -76,6 +81,28 @@ export default function AuthModal() {
               </p>
             </div>
 
+            {signUpSuccess ? (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                  <CheckCircle2 size={32} className="text-neon-green" />
+                  <p className="text-sm font-mono text-gray-200">
+                    Check your email to confirm your account.
+                  </p>
+                  <p className="text-xs font-mono text-gray-500">
+                    Once confirmed, come back and sign in.
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleClose}
+                  className="w-full py-3 bg-neon-cyan/10 border border-neon-cyan/50 rounded-xl text-neon-cyan font-mono text-sm uppercase tracking-wider hover:bg-neon-cyan/20 transition-all"
+                >
+                  Got it
+                </motion.button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
                 <div className="relative">
@@ -84,7 +111,12 @@ export default function AuthModal() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Display name"
+                    placeholder="Display name (3–24 chars)"
+                    required
+                    minLength={3}
+                    maxLength={24}
+                    pattern="[A-Za-z0-9_.\-]+"
+                    title="Letters, numbers, and . _ - only"
                     className="w-full bg-dark-700 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-200 font-mono placeholder:text-gray-600 focus:outline-none focus:border-neon-cyan/50 focus:shadow-[0_0_10px_rgba(0,240,255,0.1)] transition-all"
                   />
                 </div>
@@ -150,15 +182,18 @@ export default function AuthModal() {
                 )}
               </motion.button>
             </form>
+            )}
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={toggleMode}
-                className="text-xs text-gray-500 font-mono hover:text-neon-cyan transition-colors"
-              >
-                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-              </button>
-            </div>
+            {!signUpSuccess && (
+              <div className="mt-6 text-center">
+                <button
+                  onClick={toggleMode}
+                  className="text-xs text-gray-500 font-mono hover:text-neon-cyan transition-colors"
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                </button>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
