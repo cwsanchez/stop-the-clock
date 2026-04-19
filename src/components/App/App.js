@@ -24,7 +24,7 @@ import useJourneyStore from '../../stores/useJourneyStore';
 import useTimer from '../../hooks/useTimer';
 import useSound from '../../hooks/useSound';
 import { isStopSuccess, formatTime } from '../../utils/formatTime';
-import { supabase } from '../../lib/supabaseClient';
+import { checkAndRecoverHealth } from '../../lib/supabaseClient';
 function GameMessage() {
   const { phase } = useTimerStore();
   const { lastResult, mode, feverRunActive, feverEnded, currentMultiplier } = useGameStore();
@@ -104,7 +104,14 @@ export default function App() {
     feverRunActive, feverEnded, currentMultiplier, lastHitElapsedMs,
     startFeverRun, feverHit, feverResetMultiplier, endFeverRun, resetFever,
   } = useGameStore();
-  const { submitScore, fetchAllLeaderboards, fetchUserScores, setActiveLeaderboardTab } = useLeaderboardStore();
+  const {
+    submitScore,
+    fetchAllLeaderboards,
+    fetchUserScores,
+    setActiveLeaderboardTab,
+    flushPendingSubmit,
+    hasPendingSubmit,
+  } = useLeaderboardStore();
   const { user, profile, initialize } = useAuthStore();
   const { reset: resetTimerLoop } = useTimer();
   const {
@@ -139,32 +146,86 @@ export default function App() {
     }
   }, [user, mode, fetchUserScores, setPersonalBest]);
 
-  // Keep-alive: ping Supabase every 60 s while the tab is visible to prevent
-  // the connection from going stale and freezing the leaderboard / auth state.
+  // Recover from tab-idle / suspension induced Supabase client freezes.
+  //
+  // The Supabase JS client can deadlock its internal auth lock after a
+  // long tab-idle period, after which every query hangs forever. We:
+  //   1. Periodically probe health with a short-timeout getSession call
+  //      and rebuild the client if it hangs.
+  //   2. Re-probe whenever the tab becomes visible again or is restored
+  //      from the bfcache (pageshow).
+  //   3. Refetch leaderboards + flush any queued score submission after
+  //      a successful health check.
   useEffect(() => {
-    let keepAliveId = null;
+    let timerId = null;
+    let cancelled = false;
 
-    const ping = () => {
-      if (document.visibilityState === 'visible') {
-        supabase.auth.getSession();
+    const recover = async (reason) => {
+      if (cancelled) return;
+      const { recreated } = await checkAndRecoverHealth(reason);
+      if (cancelled) return;
+      // Always refetch on focus/resume; only force-clear-and-refetch
+      // if the client was actually rebuilt.
+      fetchAllLeaderboards();
+      if (recreated) {
+        flushPendingSubmit().then((res) => {
+          if (res?.flushed && res.isNewHigh) {
+            setRateLimitMsg('Your pending score was submitted!');
+            setTimeout(() => setRateLimitMsg(''), 4000);
+          }
+        });
+      } else if (useLeaderboardStore.getState().hasPendingSubmit) {
+        flushPendingSubmit();
       }
     };
 
-    keepAliveId = setInterval(ping, 60_000);
-
-    return () => clearInterval(keepAliveId);
-  }, []);
-
-  // Refetch leaderboards when the tab regains focus (no client recreation)
-  useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchAllLeaderboards();
+        recover('visibilitychange');
       }
     };
+
+    const handlePageShow = (e) => {
+      // `persisted === true` means we were restored from bfcache — the
+      // JS runtime was frozen the whole time we were away.
+      if (e.persisted || document.visibilityState === 'visible') {
+        recover('pageshow');
+      }
+    };
+
+    const handleFocus = () => recover('focus');
+
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [fetchAllLeaderboards]);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('focus', handleFocus);
+
+    // Periodic health probe — catches freezes even if the user never
+    // switches tabs (e.g. they're just idle on the page).
+    timerId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        recover('interval');
+      }
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('focus', handleFocus);
+      if (timerId) clearInterval(timerId);
+    };
+  }, [fetchAllLeaderboards, flushPendingSubmit]);
+
+  // One-shot flush of any queued submission left over from a previous
+  // session that died before we could write to Supabase.
+  const didFlushOnMountRef = useRef(false);
+  useEffect(() => {
+    if (didFlushOnMountRef.current) return;
+    didFlushOnMountRef.current = true;
+    if (hasPendingSubmit) {
+      flushPendingSubmit();
+    }
+  }, [hasPendingSubmit, flushPendingSubmit]);
 
   useEffect(() => {
     if (!feverRunActive) {
@@ -350,6 +411,23 @@ export default function App() {
     if (result?.rateLimited) {
       setRateLimitMsg('Wait 5s between submissions');
       setTimeout(() => setRateLimitMsg(''), 3000);
+      return;
+    }
+
+    if (result?.failed) {
+      // The Supabase client was wedged. The score is queued to
+      // localStorage and will auto-retry on focus / reconnect — no
+      // need to make the user refresh.
+      setRateLimitMsg(
+        result?.queued
+          ? 'Connection issue — score saved and will submit automatically.'
+          : 'Submission failed. Please try again.',
+      );
+      setTimeout(() => setRateLimitMsg(''), 5000);
+      // Kick off an immediate recovery attempt in the background.
+      checkAndRecoverHealth('submit-failed').then(() => {
+        useLeaderboardStore.getState().flushPendingSubmit();
+      });
       return;
     }
 

@@ -13,7 +13,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      `crossorigin="use-credentials"` makes the browser include cookies
+      when fetching the manifest. Without it, protected Vercel preview
+      deployments reject the (uncredentialed) manifest request with a
+      401 because the `_vercel_sso_nonce` cookie isn't sent. This has
+      no effect on public/production deployments since the manifest is
+      same-origin.
+      https://github.com/vercel/next.js/issues/62866
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials" />
     <title>Stop the Clock!</title>
   </head>
   <body>
